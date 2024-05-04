@@ -1,0 +1,123 @@
+# source
+# https://gitlab.com/yesolutions/gitlab-ci-templates/-/tree/main
+pre-commit:
+  stage: .pre
+  rules:
+    - if: '$PRE_COMMIT_SKIP_BRANCH_PIPELINE && $CI_COMMIT_BRANCH'
+      when: never
+    - if: '$PRE_COMMIT_SKIP_MR_PIPELINE && $CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: '$PRE_COMMIT_AUTO_FIX_BRANCH_ONLY && $CI_PIPELINE_SOURCE == "merge_request_event"'
+      variables:
+        PRE_COMMIT_AUTO_FIX: ""
+      when: on_success
+      exists:
+        - .pre-commit-config.yaml
+    - if: '$PRE_COMMIT_DEDUPLICATE_MR_AND_BRANCH == "true" && $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$PRE_COMMIT_AUTO_FIX_MR_ONLY && $CI_PIPELINE_SOURCE != "merge_request_event"'
+      variables:
+        PRE_COMMIT_AUTO_FIX: ""
+      exists:
+        - .pre-commit-config.yaml
+      when: on_success
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "detached"'
+      variables:  # we don't support autofix for merged_result or merge_train pipelines, configure branch fixing instead
+        PRE_COMMIT_AUTO_FIX: ""
+      exists:
+        - .pre-commit-config.yaml
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      exists:
+        - .pre-commit-config.yaml
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH'
+      exists:
+        - .pre-commit-config.yaml
+      when: on_success
+    - when: never
+
+  variables:
+    PRE_COMMIT_AUTO_FIX: "1"
+    PRE_COMMIT_DEDUPLICATE_MR_AND_BRANCH: "true"
+    PRE_COMMIT_SKIP_BRANCH_PIPELINE: "true"
+    PRE_COMMIT_AUTO_FIX_MR_ONLY: "true"
+    PRE_COMMIT_DEBUG: "true"
+    PRE_COMMIT_ACCESS_TOKEN: "glpat-yU3zzUCLZNS-cZs_-yFV"
+
+
+  image: registry.gitlab.com/yesolutions/docker-pre-commit
+  script: |
+    if [[ -n "$PRE_COMMIT_AUTO_FIX_BRANCH_ONLY" && -n "$PRE_COMMIT_AUTO_FIX_MR_ONLY" ]]; then
+        echo "invalid configuration. PRE_COMMIT_AUTO_FIX_BRANCH_ONLY and PRE_COMMIT_AUTO_FIX_MR_ONLY are mutually exclusive"
+        exit 1
+    fi
+
+    if [[ $PRE_COMMIT_DEBUG ]]; then
+        set -x
+        echo "DEBUGGING ENABLED"
+    fi
+
+    status=0
+
+    if [[ -n "$CI_COMMIT_BRANCH" ]]; then
+        git remote set-url origin "https://gitlab-ci-token:${PRE_COMMIT_ACCESS_TOKEN:-$CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+        git fetch origin
+        git checkout $CI_COMMIT_BRANCH
+        if [[ -n "$PRE_COMMIT_DEBUG" ]]; then
+            git status
+        fi
+    fi
+    if [[ -n "$CI_MERGE_REQUEST_IID" ]]; then
+        git remote set-url origin "https://gitlab-ci-token:${PRE_COMMIT_ACCESS_TOKEN:-$CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_MERGE_REQUEST_SOURCE_PROJECT_PATH}.git"
+        git fetch origin
+        if [[ -n "$PRE_COMMIT_DEBUG" ]]; then
+            git status
+        fi
+    fi
+
+    pre-commit run --all-files || status=$?  # check the status passes now with autofix otherwise, it'll bail here
+
+    if [[ $status -eq 0 ]]; then
+      echo "Everything is good"
+      exit 0  # we're all good, pipeline can proceed
+    fi
+
+    git config --global user.email "precommit@code-craft.pro"
+    git config --global user.name "Pre-commit Fixer"
+    if [[ -n "$PRE_COMMIT_DEBUG" ]]; then
+        git status
+    fi
+    # proceed with auto-fix
+
+    if [[ -z "$PRE_COMMIT_ACCESS_TOKEN" ]]; then
+        echo "Auto-fix is enabled, but no pre-commit access token found."
+        echo "To enable automatic fixes, please create a project access token with repository write scope and set the PRE_COMMIT_ACCESS_TOKEN variable"
+        exit 1
+    fi
+
+    msg=$(git status)
+
+    if echo "$msg" | grep "nothing to commit"; then
+        echo "Nothing to commit, exit"
+        exit 0
+    fi
+
+    if [[ -n "$CI_COMMIT_BRANCH" ]]; then
+        git add -u .
+        if [[ -n "$PRE_COMMIT_DEBUG" ]]; then
+            git status
+        fi
+        git commit -m "Auto fixes from pre-commit CI job" -m "job url: $CI_JOB_URL"
+        git push -o ci.skip
+    elif [[ -n "$CI_MERGE_REQUEST_IID" ]]; then
+        git add -u .
+        if [[ -n "$PRE_COMMIT_DEBUG" ]]; then
+            git status
+        fi
+        git commit -m "Auto fixes from pre-commit CI job" -m "job url: $CI_JOB_URL"
+        git push -o ci.skip origin HEAD:"$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+    else
+       echo "Auto fix is not supported in this context"
+       echo "Auto fix is only available in branch and merge request pipelines"
+       exit 1
+    fi

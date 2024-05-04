@@ -1,0 +1,23 @@
+[tool.black]
+line-length = 120
+target-version = ['py312']
+include = '\.py$'
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | node_modules
+    | assets
+    | static
+  )/
+)
+'''
+force-exclude = '(^docker|^config|^src|migrations)'

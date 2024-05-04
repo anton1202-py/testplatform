@@ -1,0 +1,77 @@
+default:
+  image: python:3.12-slim
+
+include:
+  local: 'pre-commit-autofix.yaml'
+
+stages:
+  - test
+  - build
+
+Pytest:
+  stage: test
+  before_script:
+    - mkdir -p $HOME/.docker
+    - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+  image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    PROJECT_NAME: gitlab
+    POSTGRES_DB: $POSTGRES_DB
+    POSTGRES_USER: $POSTGRES_USER
+    POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    POSTGRES_HOST_AUTH_METHOD: trust
+    DJANGO_SETTINGS_MODULE: analyticalplatform.gitlab
+    OPENSEARCH_JAVA_OPTS: "-Xms256m -Xmx256m"
+  services:
+    - redis:latest
+    - postgres:12
+    - name: opensearchproject/opensearch:2.9.0
+      command: ["bash", "-c", "env 'discovery.type=single-node' 'cluster.name=opensearch' ./opensearch-docker-entrypoint.sh"]
+  coverage: '/TOTAL.*\s([.\d]+)%/'
+#  artifacts:
+#    reports:
+#      coverage_report:
+#        coverage_format: cobertura
+#        path: coverage.xml
+#      junit: report.xml
+  script:
+    - python -m pytest -s --ds=analyticalplatform.gitlab --maxfail=1000
+#    - python -m coverage xml -i
+
+Build Web Container:
+  before_script:
+    - mkdir -p $HOME/.docker
+    - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
+  stage: build
+  image: docker:git
+  services:
+    - name: docker:dind
+      alias: thedockerhost
+
+  variables:
+    DOCKER_HOST: tcp://thedockerhost:2375/
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH =~ /^release/
+    - if: $CI_COMMIT_BRANCH =~ /^feature/
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix/
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG || true
+    - echo $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker build --cache-from $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG --file "Dockerfile" --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - |
+      if [[ $CI_COMMIT_BRANCH == "main" ]]; then
+        version=$(cd ${CI_PROJECT_DIR} && git describe --tags --always --abbrev=0)
+        docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$version
+        docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$version
+        docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG $CI_REGISTRY_IMAGE
+        docker push $CI_REGISTRY_IMAGE
+      fi

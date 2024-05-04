@@ -1,0 +1,12 @@
+.idea/
+**/__pycache__/
+*.db
+*.pyc
+.env
+venv/
+db.sqlite
+pg_data/
+node_modules
+
+static
+staticfiles
