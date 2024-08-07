@@ -31,6 +31,7 @@ INSTALLED_APPS = [
 
     "core",
     "stock",
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -99,6 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     "DATETIME_FORMAT": "iso-8601",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -109,6 +111,14 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 100,
+}
+
+# Настройки Swagger.
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Analytic Platform API документация',
+    'DESCRIPTION': '',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 LANGUAGE_CODE = "ru"
