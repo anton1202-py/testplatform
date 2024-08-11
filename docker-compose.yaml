@@ -1,7 +1,7 @@
 services:
   analytical-db:
     image: postgres:16.2
-    command: -c shared_buffers=1GB
+    command: -c shared_buffers=256MB
     volumes:
       - analytical-db:/var/lib/postgresql/data
     ports:

@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "core",
     "stock",
     'drf_spectacular',
+    'unit_economics.apps.UnitEconomicsConfig'
 ]
 
 MIDDLEWARE = [
@@ -69,11 +70,11 @@ WSGI_APPLICATION = "analyticalplatform.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "NAME": os.getenv("DB", "analytical"),
-        "USER": os.getenv("DB_USER", "gutsh"),
+        "HOST": os.getenv("DB_HOST"),
+        "NAME": os.getenv("DB"),
+        "USER": os.getenv("DB_USER"),
         "PORT": 5432,
-        "PASSWORD": os.getenv("DB_PASSWORD", "rASYx_rlUyx3"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
         "CONN_MAX_AGE": None,
     },
 }
