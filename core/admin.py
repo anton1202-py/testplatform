@@ -22,6 +22,4 @@ class PlatformAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = [
-        "name",
-    ]
+    list_display = ['id', 'name', 'account', 'sku', 'vendor', 'brand', 'connection', 'barcode']
