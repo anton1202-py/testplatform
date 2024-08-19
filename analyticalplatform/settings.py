@@ -14,6 +14,14 @@ DEBUG = os.getenv("DEBUG", True)
 ALLOWED_HOSTS = json.loads(os.getenv("ALLOWED_HOSTS", "[]"))
 CORS_ALLOW_ALL_ORIGINS = True
 
+TOKEN_MY_SKLAD = os.getenv('TOKEN_MY_SKLAD')
+TOKEN_WB = os.getenv('TOKEN_WB')
+OZON_ID = os.getenv('OZON_ID')
+TOKEN_OZON = os.getenv('TOKEN_OZON')
+YM_ID = os.getenv('YM_ID')
+TOKEN_YM = os.getenv('TOKEN_YM')
+
+
 # Application definition
 
 INSTALLED_APPS = [

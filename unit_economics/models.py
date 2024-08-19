@@ -11,7 +11,7 @@ class ProductPrice(models.Model):
     brand = models.TextField(null=True, blank=True, verbose_name="Бренд товара")
     sku = models.CharField(max_length=255, verbose_name="Идентификатор товара на платформе")
     vendor = models.CharField(max_length=255, null=False, verbose_name="Артикул товара")
-    barcode = models.CharField(max_length=255, null=False, verbose_name="Баркод товара")
+    barcode = models.JSONField(default=list, null=False, verbose_name="Баркод товара")
     type = models.CharField(max_length=255, verbose_name='Тип товара(продукты, комплекты)')
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Цена товара')
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
