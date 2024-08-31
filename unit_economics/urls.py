@@ -5,11 +5,11 @@ from unit_economics.views import ProductPriceMSViewSet, ProductPriceWBViewSet, P
 
 router = DefaultRouter()
 router.register(r'product-create-db-my-sklad', ProductPriceMSViewSet)
-router.register(r'product-create-db-wb', ProductPriceWBViewSet)
-router.register(r'product-create-db-ozon', ProductPriceOZONViewSet)
-router.register(r'product-my-sklad', ProductMoySkladViewSet)
-router.register(r'product-wb', ProductWBViewSet)
-router.register(r'product-ozon', ProductOZONViewSet)
+router.register(r'product-create-db-wb', ProductPriceWBViewSet, basename='unit_economics')
+router.register(r'product-create-db-ozon', ProductPriceOZONViewSet, basename='ozon_unit_economics')
+router.register(r'product-my-sklad', ProductMoySkladViewSet, basename='moysklad_unit_economics')
+router.register(r'product-wb', ProductWBViewSet, basename='wb_product_unit_economics')
+router.register(r'product-ozon', ProductOZONViewSet, basename='ozon_product_unit_economics')
 
 urlpatterns = [
     path('', include(router.urls)),

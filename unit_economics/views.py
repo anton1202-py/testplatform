@@ -1,14 +1,22 @@
 import requests
 from django.db import transaction
 from django.db.models import Count
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from analyticalplatform.settings import TOKEN_WB, TOKEN_MY_SKLAD, TOKEN_OZON, OZON_ID
+from analyticalplatform.settings import TOKEN_WB, TOKEN_MY_SKLAD, TOKEN_OZON, OZON_ID, TOKEN_YM
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
 from unit_economics.models import ProductPrice
 from unit_economics.serializers import ProductPriceSerializer
+import logging
+
+from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
+from unit_economics.tasks_ozon import ozon_comission_logistic_add_data_to_db, ozon_products_data_to_db
+from unit_economics.tasks_wb import wb_categories_list, wb_comission_add_data_to_db, wb_logistic_add_to_db, wb_products_data_to_db
+from unit_economics.tasks_yandex import yandex_add_campaigns_data_to_db, yandex_business_list
+
+logger = logging.getLogger(__name__)
 
 
 # def moysklad_json_token():
@@ -43,14 +51,16 @@ from unit_economics.serializers import ProductPriceSerializer
 #     return None
 
 
-class ProductPriceMSViewSet(ModelViewSet):
+class ProductPriceMSViewSet(viewsets.ViewSet):
     """ViewSet для работы с продуктами на платформе МойСклад"""
     queryset = ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
+    queryset = ProductPrice.objects.all()
     serializer_class = ProductPriceSerializer
 
     def list(self, request):
         """Получение данных о продуктах из API и обновление базы данных"""
         user = request.user
+        
         account, created = Account.objects.get_or_create(
             user=user,
             platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD),
@@ -63,58 +73,17 @@ class ProductPriceMSViewSet(ModelViewSet):
         if not created and account.authorization_fields.get('token') != TOKEN_MY_SKLAD:
             account.authorization_fields['token'] = TOKEN_MY_SKLAD
             account.save()
-        limit = 100  # Количество товаров за один запрос
-        offset = 0  # Начальная позиция
         total_processed = 0  # Счетчик обработанных записей
-        product_data = []  # Список для хранения данных о продуктах
-
-        while True:
-            api_url = f"https://api.moysklad.ru/api/remap/1.2/entity/assortment?limit={limit}&offset={offset}&filter=archived=false;type=product;type=bundle"
-            headers = {
-                'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
-                'Accept-Encoding': 'gzip',
-                'Content-Type': 'application/json'
-            }
-            response = requests.get(api_url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                products = data.get('rows', [])
-
-                if not products:
-                    break  # Если больше нет данных для обработки, выйти из цикла
-
-                for item in products:
-                    # Добавляем продукты и информацию о них в список
-                    product_info = {
-                        'account': account,
-                        'platform': Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD),
-                        'sku': item.get('id', ''),
-                        'name': item.get('name', ''),
-                        'brand': item.get('attributes', [{}])[0].get('value', None),
-                        'vendor': item.get('article', ''),
-                        'barcode': [list(barcode.values())[0][:255] for barcode in item.get('barcodes', [])],
-                        'type': item['meta'].get('type'),
-                        'price': item.get('salePrices', [{}])[0].get('value', None),
-                        'cost_price': item.get('buyPrice', {}).get('value', None),
-                    }
-                    product_data.append(product_info)
-
-                offset += limit  # Переход к следующему набору продуктов
-
-            else:
-                return Response({'status': 'error', 'message': response.text}, status=response.status_code)
-
-        # Массовая вставка или обновление данных
-        with transaction.atomic():
-            for product_info in product_data:
-                ProductPrice.objects.update_or_create(
-                    account=product_info['account'],
-                    platform=product_info['platform'],
-                    sku=product_info['sku'],
-                    defaults=product_info
-                )
-                total_processed += 1
-
+        # yandex_add_campaigns_data_to_db(TOKEN_YM)
+        # yandex_business_list(TOKEN_YM)
+        # ozon_comission_logistic_add_data_to_db()
+        # wb_products_data_to_db()
+        # ozon_products_data_to_db()
+        # yandex_add_campaigns_data_to_db()
+        wb_comission_add_data_to_db()
+        # wb_logistic_add_to_db()
+        # wb_categories_list(TOKEN_WB)
+        # moy_sklad_add_data_to_db(TOKEN_MY_SKLAD, account)
         updated_products = ProductPrice.objects.filter(
             platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
         serializer = ProductPriceSerializer(updated_products, many=True)
@@ -125,7 +94,8 @@ class ProductPriceMSViewSet(ModelViewSet):
 
 class ProductPriceWBViewSet(ModelViewSet):
     """ViewSet для работы с продуктами на платформе WB"""
-    queryset = ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
+    # queryset = ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
+    queryset = ProductPrice.objects.all()
     serializer_class = ProductPriceSerializer
 
     def list(self, request):
@@ -326,8 +296,9 @@ class ProductPriceWBViewSet(ModelViewSet):
 #                 status=status.HTTP_200_OK)
 
 class ProductPriceOZONViewSet(ModelViewSet):
-    queryset = ProductPrice.objects.filter(
-        platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
+    # queryset = ProductPrice.objects.filter(
+    #     platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
+    queryset = ProductPrice.objects.all()
     serializer_class = ProductPriceSerializer
 
     def list(self, request):
@@ -411,18 +382,24 @@ class ProductPriceOZONViewSet(ModelViewSet):
 
 
 class ProductMoySkladViewSet(ModelViewSet):
-    queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
+    # queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
+    #             .annotate(product_count=Count('id')))
+    queryset = (ProductPrice.objects.all()
                 .annotate(product_count=Count('id')))
     serializer_class = ProductPriceSerializer
 
 
 class ProductWBViewSet(ModelViewSet):
-    queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
+    # queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
+    #             .annotate(product_count=Count('id')))
+    queryset = (ProductPrice.objects.all()
                 .annotate(product_count=Count('id')))
     serializer_class = ProductPriceSerializer
 
 
 class ProductOZONViewSet(ModelViewSet):
-    queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
+    # queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
+    #             .annotate(product_count=Count('id')))
+    queryset = (ProductPrice.objects.all()
                 .annotate(product_count=Count('id')))
     serializer_class = ProductPriceSerializer

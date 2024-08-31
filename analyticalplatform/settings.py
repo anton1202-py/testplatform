@@ -1,9 +1,9 @@
 import json
 import os
 from pathlib import Path
-# from dotenv import load_dotenv
-#
-# load_dotenv()
+from dotenv import load_dotenv
+
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,8 +22,6 @@ YM_ID = os.getenv('YM_ID')
 TOKEN_YM = os.getenv('TOKEN_YM')
 
 
-# Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -40,7 +38,8 @@ INSTALLED_APPS = [
     "core",
     "stock",
     'drf_spectacular',
-    'unit_economics.apps.UnitEconomicsConfig'
+    'unit_economics',
+    # 'unit_economics.apps.UnitEconomicsConfig',
 ]
 
 MIDDLEWARE = [
@@ -86,12 +85,13 @@ DATABASES = {
         "CONN_MAX_AGE": None,
     },
 }
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": "mydatabase",
-#     }
-# }
+
+
+
+# Путь к файлу дампа
+
+
+# Подключаемся к базе данных
 
 AUTH_PASSWORD_VALIDATORS = [
     {
