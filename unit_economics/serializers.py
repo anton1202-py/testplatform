@@ -6,7 +6,8 @@ from unit_economics.models import ProductPrice
 
 class ProductPriceSerializer(serializers.ModelSerializer):
     account = AccountsListSerializers
-    
+
     class Meta:
         model = ProductPrice
-        fields = ['name', 'account', 'platform', 'brand', 'sku', 'vendor', 'barcode', 'product_type', 'price', 'cost_price']
+        fields = ['name', 'account', 'brand', 'vendor',
+                  'barcode', 'product_type', 'cost_price']

@@ -24,7 +24,7 @@ def moy_sklad_assortment(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_li
         iter_numb=0 - Счетчик вызовов метода
         products_data_list=[] - список с данными всех продуктов
     """
-    limit = 1000  # Количество товаров за один запрос
+    limit = 100  # Количество товаров за один запрос
     api_url = f"https://api.moysklad.ru/api/remap/1.2/entity/assortment?limit={limit}&offset={offset}&filter=archived=false;type=product;type=bundle"
     headers = {
         'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
@@ -45,6 +45,4 @@ def moy_sklad_assortment(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_li
             return products_data_list
     else:
         message = f'Ошибка при вызовае метода https://api.moysklad.ru/api/remap/1.2/entity/assortment?limit=limit&offset=offset&filter=archived=false;type=product;type=bundle: {response.status_code}. {response.text}'
-        # TODO Сделать отправку ошибки в ТГ бот
         print(message)
-        

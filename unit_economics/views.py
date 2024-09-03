@@ -1,20 +1,28 @@
+import logging
+
 import requests
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from analyticalplatform.settings import TOKEN_WB, TOKEN_MY_SKLAD, TOKEN_OZON, OZON_ID, TOKEN_YM
+
+from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
+                                         TOKEN_WB, TOKEN_YM)
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
 from unit_economics.models import ProductPrice
 from unit_economics.serializers import ProductPriceSerializer
-import logging
-
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
-from unit_economics.tasks_ozon import ozon_comission_logistic_add_data_to_db, ozon_products_data_to_db
-from unit_economics.tasks_wb import wb_categories_list, wb_comission_add_data_to_db, wb_logistic_add_to_db, wb_products_data_to_db
-from unit_economics.tasks_yandex import yandex_add_campaigns_data_to_db, yandex_business_list
+from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
+                                       ozon_products_data_to_db)
+from unit_economics.tasks_wb import (wb_categories_list,
+                                     wb_comission_add_to_db,
+                                     wb_logistic_add_to_db,
+                                     wb_products_data_to_db)
+from unit_economics.tasks_yandex import (
+    yandex_add_products_data_to_db, yandex_business_list,
+    yandex_comission_logistic_add_data_to_db)
 
 logger = logging.getLogger(__name__)
 
@@ -53,17 +61,18 @@ logger = logging.getLogger(__name__)
 
 class ProductPriceMSViewSet(viewsets.ViewSet):
     """ViewSet для работы с продуктами на платформе МойСклад"""
-    queryset = ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
+    # queryset = ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
     queryset = ProductPrice.objects.all()
     serializer_class = ProductPriceSerializer
 
     def list(self, request):
         """Получение данных о продуктах из API и обновление базы данных"""
         user = request.user
-        
+
         account, created = Account.objects.get_or_create(
             user=user,
-            platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD),
+            platform=Platform.objects.get(
+                platform_type=MarketplaceChoices.MOY_SKLAD),
             defaults={
                 'name': 'Мой склад',
                 'authorization_fields': {'token': TOKEN_MY_SKLAD}
@@ -74,21 +83,23 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
             account.authorization_fields['token'] = TOKEN_MY_SKLAD
             account.save()
         total_processed = 0  # Счетчик обработанных записей
-        # yandex_add_campaigns_data_to_db(TOKEN_YM)
-        # yandex_business_list(TOKEN_YM)
-        # ozon_comission_logistic_add_data_to_db()
+
         # wb_products_data_to_db()
-        # ozon_products_data_to_db()
-        # yandex_add_campaigns_data_to_db()
-        wb_comission_add_data_to_db()
         # wb_logistic_add_to_db()
-        # wb_categories_list(TOKEN_WB)
-        # moy_sklad_add_data_to_db(TOKEN_MY_SKLAD, account)
-        updated_products = ProductPrice.objects.filter(
-            platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
+        # wb_comission_add_to_db()
+
+        # ozon_products_data_to_db()
+        # ozon_comission_logistic_add_data_to_db()
+
+        # yandex_add_products_data_to_db()
+        # yandex_comission_logistic_add_data_to_db()
+
+        # moy_sklad_add_data_to_db()
+        updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
-            {'status': 'success', 'message': f'Total processed: {total_processed}', 'data': serializer.data},
+            {'status': 'success', 'message': f'Total processed: {total_processed}',
+                'data': serializer.data},
             status=status.HTTP_200_OK)
 
 
@@ -103,7 +114,8 @@ class ProductPriceWBViewSet(ModelViewSet):
         user = request.user
         account, created = Account.objects.get_or_create(
             user=user,
-            platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES),
+            platform=Platform.objects.get(
+                platform_type=MarketplaceChoices.WILDBERRIES),
             defaults={
                 'name': 'Магазин WB',
                 'authorization_fields': {'token': TOKEN_WB}
@@ -133,7 +145,8 @@ class ProductPriceWBViewSet(ModelViewSet):
             }
 
             product_data = []  # Список для хранения данных о продуктах
-            response = requests.post(api_url, headers=headers, json=request_body)
+            response = requests.post(
+                api_url, headers=headers, json=request_body)
             if response.status_code == 200:
                 data = response.json()
                 products = data.get('cards', [])
@@ -148,23 +161,27 @@ class ProductPriceWBViewSet(ModelViewSet):
                         'name': item.get('title', ''),  # Имя товара
                         'brand': item.get('brand', ''),  # Брэнд товара
                         'vendor': item.get('vendorCode', ''),  # Артикул товара
-                        'barcode': item.get('sizes', [{}])[0].get('skus', '')[0],  # Баркод товара
+                        # Баркод товара
+                        'barcode': item.get('sizes', [{}])[0].get('skus', '')[0],
                         'type': '',  # Артикул товара WB
                         'price': 0,  # Цена товара со скидкой
                         'cost_price': 0,  # Себестоимость товара из МойСклад
                     }
 
                     moy_sklad_product = ProductPrice.objects.filter(
-                        platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD),
+                        platform=Platform.objects.get(
+                            platform_type=MarketplaceChoices.MOY_SKLAD),
                         barcode__contains=product_info['barcode']).first()
                     if moy_sklad_product is not None:
                         product_info['price'] = moy_sklad_product.price
                         product_info['cost_price'] = moy_sklad_product.cost_price
                     else:
-                        print(f"Product with barcode {product_info['barcode']} not found in MoySklad")
+                        print(
+                            f"Product with barcode {product_info['barcode']} not found in MoySklad")
                     product_data.append(product_info)
 
-                all_product_data.extend(product_data)  # Добавляем данные в общий список
+                # Добавляем данные в общий список
+                all_product_data.extend(product_data)
 
                 # Параметры пагинации
                 cursor = data.get('cursor', {})
@@ -318,11 +335,11 @@ class ProductPriceOZONViewSet(ModelViewSet):
                 user=user,
                 platform=platform,
                 name='Магазин Ozon',
-                authorization_fields={'token': TOKEN_OZON, 'client_id': OZON_ID}
+                authorization_fields={
+                    'token': TOKEN_OZON, 'client_id': OZON_ID}
             )
 
         product_data = []  # Список для хранения данных о продуктах
-
 
         api_url = "https://api-seller.ozon.ru/v2/product/list?filter=\"visibility\": \"ALL\"&limit=1000"
         headers = {
@@ -353,13 +370,15 @@ class ProductPriceOZONViewSet(ModelViewSet):
                     'cost_price': 0,
                 }
                 moy_sklad_product = ProductPrice.objects.filter(
-                    platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD),
+                    platform=Platform.objects.get(
+                        platform_type=MarketplaceChoices.MOY_SKLAD),
                     barcode__contains=product_info_item['barcode']).first()
                 if moy_sklad_product:
                     product_info_item['price'] = moy_sklad_product.price
                     product_info_item['cost_price'] = moy_sklad_product.cost_price
                 else:
-                    print(f"Product with barcode {product_info_item['barcode']} not found in MoySklad")
+                    print(
+                        f"Product with barcode {product_info_item['barcode']} not found in MoySklad")
                 print(f"Количество объектов для записи: {len(product_data)}")
                 product_data.append(product_info_item)
 

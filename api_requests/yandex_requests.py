@@ -56,7 +56,7 @@ def yandex_campaigns_from_business(TOKEN_YM, business_id, limit=100, page_token=
             return data_list
 
 
-def yandex_comission_calculate(TOKEN_YM, offers_list, limit=100, data_list=[]):
+def yandex_comission_calculate(TOKEN_YM: str, logistic_type: str, offers_list: list) -> list:
     """
     Рассчитывает стоимость услуг Маркета для товаров с заданными параметрами. 
     Порядок товаров в запросе и ответе сохраняется, чтобы определить, для какого товара рассчитана стоимость услуги.
@@ -72,19 +72,16 @@ def yandex_comission_calculate(TOKEN_YM, offers_list, limit=100, data_list=[]):
     }
     payload = json.dumps({
         "parameters": {
-            "sellingProgram": "FBY",
+            "sellingProgram": logistic_type,
             "frequency": "DAILY"
         },
         "offers": offers_list
     })
     response = requests.request("POST", api_url, headers=headers, data=payload)
+    if response.status_code != 200:
+        print('response.status_code', response.text)
     if response.status_code == 200:
         main_data = response.json().get('result', [])
         if main_data:
-            campaigns_list = main_data.get('offerMappings')
-            for data in campaigns_list:
-                data_list.append(data)
-            if len(campaigns_list) == limit:
-                page_token = main_data['paging']['nextPageToken']
-                return yandex_campaigns_from_business(TOKEN_YM, business_id, limit, page_token, data_list)
-            return data_list
+            comission_list = main_data.get('offers')
+            return comission_list

@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,6 +21,10 @@ OZON_ID = os.getenv('OZON_ID')
 TOKEN_OZON = os.getenv('TOKEN_OZON')
 YM_ID = os.getenv('YM_ID')
 TOKEN_YM = os.getenv('TOKEN_YM')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+BACK_ADMIN_CHAT_ID = os.getenv('BACK_ADMIN_CHAT_ID')
+API_ADMIN_CHAT_ID = os.getenv('API_ADMIN_CHAT_ID')
+ADMINS_CHATID_LIST = [BACK_ADMIN_CHAT_ID, API_ADMIN_CHAT_ID]
 
 
 INSTALLED_APPS = [
@@ -87,7 +92,6 @@ DATABASES = {
 }
 
 
-
 # Путь к файлу дампа
 
 
@@ -148,7 +152,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "core.User"
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_ACCEPT_CONTENT = ["application/json"]
@@ -161,4 +166,5 @@ REMEMBER_ME_SESSION_COOKIE_AGE = 60 * 60 * 24 * 31  # один месяц
 
 PRODUCT_MASS_CREATION_BATCH_SIZE = 100
 
-CSRF_TRUSTED_ORIGINS = ["https://*.rau-place.ru", "https://*.127.0.0.1", "http://0.0.0.0:8001"]
+CSRF_TRUSTED_ORIGINS = ["https://*.rau-place.ru",
+                        "https://*.127.0.0.1", "http://0.0.0.0:8001"]
