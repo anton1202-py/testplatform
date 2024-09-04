@@ -7,9 +7,16 @@ from api_requests.moy_sklad import moy_sklad_assortment
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
 from unit_economics.integrations import sender_error_to_tg
-from unit_economics.models import ProductPrice
+from unit_economics.models import (ProductForMarketplacePrice,
+                                   ProductOzonPrice, ProductPrice)
 
 logger = logging.getLogger(__name__)
+
+OZON_ACCOUNT_NAME = {
+    'ОЗОН Evium': 'Ozon Envium',
+    'ОЗОН Combo': 'Озон Комбо',
+    'ОЗОН Market Space': 'Озон спейс'
+}
 
 
 @sender_error_to_tg
@@ -25,6 +32,10 @@ def moy_sklad_add_data_to_db():
         platform=Platform.objects.get(
             platform_type=MarketplaceChoices.MOY_SKLAD)
     )
+    account_names = []
+    accounts = Account.objects.all().values('name')
+    for acc_obj in accounts:
+        account_names.append(acc_obj['name'])
 
     for account in accounts_ms:
         token_ms = account.authorization_fields['token']
@@ -100,13 +111,65 @@ def moy_sklad_add_data_to_db():
                     'barcode': [list(barcode.values())[0] for barcode in item.get('barcodes', [])],
                     'product_type': item['meta'].get('type'),
                     'cost_price': cost_price,
+                    'price_info': item['salePrices'],
                 }
                 product_data.append(product_info)
 
             # Массовая вставка или обновление данных
             with transaction.atomic():
                 for product_info in product_data:
-                    ProductPrice.objects.update_or_create(
-                        account=product_info['account'],
-                        defaults=product_info
+                    search_params = {'account': product_info['account'], 'name': product_info['name'],
+                                     'vendor': product_info['vendor'], 'brand': product_info['brand']}
+                    values_for_update = {
+                        "barcode": product_info['barcode'],
+                        "product_type": product_info['product_type'],
+                        "cost_price": product_info['cost_price']
+                    }
+                    product_obj_сort = ProductPrice.objects.update_or_create(
+                        defaults=values_for_update,
+                        **search_params
                     )
+                    product_obj = product_obj_сort[0]
+                    price_for_marketplace_from_moysklad(
+                        product_obj, product_info['price_info'], account_names)
+
+
+@sender_error_to_tg
+def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names):
+    """"Записывает цены для маркетплейсов с Мой Склад"""
+    rrc = 0
+    wb_price = 0
+    yandex_price = 0
+    difficult_price_data = {}
+    for data in price_info:
+        if data['priceType']['name'] == 'Цена РРЦ МС':
+            rrc = data['value'] / 100
+        elif data['priceType']['name'] == 'Цена WB после скидки':
+            wb_price = data['value'] / 100
+        elif data['priceType']['name'] == 'Цена Яндекс После скидки':
+            yandex_price = data['value'] / 100
+        else:
+            price_description = data['priceType']['name']
+            price_account = ' '.join(price_description.split()[1:])
+            if price_account in OZON_ACCOUNT_NAME:
+                if OZON_ACCOUNT_NAME[price_account] in accounts_names:
+                    difficult_price_data[OZON_ACCOUNT_NAME[price_account]
+                                         ] = data['value']
+    search_params = {'product': product_obj}
+    values_for_update = {
+        "wb_price": wb_price,
+        "yandex_price": yandex_price,
+        "rrc": rrc
+    }
+    ProductForMarketplacePrice.objects.update_or_create(
+        defaults=values_for_update, **search_params
+    )
+    for account_name, price in difficult_price_data.items():
+        search_params = {'product': product_obj,
+                         'account': Account.objects.get(name=account_name)}
+        values_for_update = {
+            "ozon_price": price/100
+        }
+        ProductOzonPrice.objects.update_or_create(
+            defaults=values_for_update, **search_params
+        )

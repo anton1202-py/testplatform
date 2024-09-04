@@ -78,7 +78,7 @@ def ozon_products_data_to_db():
     """Записывает данные о продуктах OZON в базу данных"""
     users = User.objects.all()
     for user in users:
-        account_sklad, created = Account.objects.get_or_create(
+        account_sklad = Account.objects.get(
             user=user,
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.MOY_SKLAD),

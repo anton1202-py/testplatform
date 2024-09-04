@@ -11,6 +11,7 @@ from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
                                          TOKEN_WB, TOKEN_YM)
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
+from unit_economics.integrations import profitability_calculate
 from unit_economics.models import ProductPrice
 from unit_economics.serializers import ProductPriceSerializer
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
@@ -84,6 +85,9 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
             account.save()
         total_processed = 0  # Счетчик обработанных записей
 
+        profitability_calculate(user)
+        # moy_sklad_add_data_to_db()
+
         # wb_products_data_to_db()
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
@@ -94,7 +98,6 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
 
-        # moy_sklad_add_data_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(

@@ -2,11 +2,14 @@ import logging
 import traceback
 
 import telegram
+from django.db.models import Count, Q
 
 from analyticalplatform.settings import ADMINS_CHATID_LIST, TELEGRAM_TOKEN
 from unit_economics.models import (MarketplaceCategory, MarketplaceCommission,
                                    MarketplaceLogistic, MarketplaceProduct,
-                                   ProductPrice)
+                                   ProductForMarketplacePrice,
+                                   ProductOzonPrice, ProductPrice,
+                                   ProfitabilityMarketplaceProduct)
 
 logger = logging.getLogger(__name__)
 bot = telegram.Bot(token=TELEGRAM_TOKEN)
@@ -24,6 +27,7 @@ def sender_error_to_tg(func):
                              f'Техническая информация:\n {tb_str}')
             for chat_id in ADMINS_CHATID_LIST:
                 bot.send_message(chat_id=chat_id, text=message_error[:4000])
+
     return wrapper
 
 
@@ -109,3 +113,63 @@ def add_marketplace_logistic_to_db(
     }
     MarketplaceLogistic.objects.update_or_create(
         defaults=values_for_update, **search_params)
+
+
+def profitability_calculate(user, overheads=0.2):
+    """Расчет рентабельности по изменению для всей таблицы"""
+    mp_products_list = MarketplaceProduct.objects.filter(account__user=user)
+    for product in mp_products_list:
+        if product.platform.name == 'OZON':
+            account = product.account
+            price = ProductOzonPrice.objects.get(
+                account=account, product=product.product).ozon_price
+            comission = MarketplaceCommission.objects.get(
+                marketplace_product=product).fbs_commission
+            logistic_cost = MarketplaceLogistic.objects.get(
+                marketplace_product=product).cost_logistic_fbs
+        elif product.platform.name == 'Wildberries':
+            price = ProductForMarketplacePrice.objects.get(
+                product=product.product).wb_price
+            comission = MarketplaceCommission.objects.get(
+                marketplace_product=product).fbs_commission
+            logistic_cost = MarketplaceLogistic.objects.get(
+                marketplace_product=product).cost_logistic
+        elif product.platform.name == 'Яндекс Маркет':
+            price = ProductForMarketplacePrice.objects.get(
+                product=product.product).yandex_price
+            comission = MarketplaceCommission.objects.get(
+                marketplace_product=product).fbs_commission
+            logistic_cost = MarketplaceLogistic.objects.get(
+                marketplace_product=product).cost_logistic
+
+        product_cost_price = product.product.cost_price/100
+
+        if price > 0:
+            profit = round((price - float(product_cost_price) -
+                            logistic_cost - comission - (overheads * price)), 2)
+            profitability = round(((profit / price) * 100), 2)
+            # print(product.name, profit, profitability)
+            search_params = {'mp_product': product}
+            values_for_update = {
+                "profit": profit,
+                "profitability": profitability
+            }
+            ProfitabilityMarketplaceProduct.objects.update_or_create(
+                defaults=values_for_update, **search_params
+            )
+
+    result = ProfitabilityMarketplaceProduct.objects.aggregate(
+        count_above_20=Count('id', filter=Q(profitability__gt=20)),
+        count_between_10_and_20=Count('id', filter=Q(
+            profitability__lt=20) & Q(profitability__gt=10)),
+
+        count_between_0_and_10=Count('id', filter=Q(
+            profitability__gt=0) & Q(profitability__lt=10)),
+
+        count_between_0_and_minus_10=Count('id', filter=Q(
+            profitability__lt=0) & Q(profitability__gt=-10)),
+        count_between_minus10_and_minus_20=Count('id', filter=Q(
+            profitability__gt=-20) & Q(profitability__lt=-10)),
+        count_below_minus_20=Count('id', filter=Q(profitability__lt=-20)),
+    )
+    return result

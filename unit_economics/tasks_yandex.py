@@ -37,10 +37,11 @@ def yandex_add_products_data_to_db():
     """
     users = User.objects.all()
     for user in users:
-        account_sklad, created = Account.objects.get_or_create(
+
+        account_sklad = Account.objects.get(
             user=user,
             platform=Platform.objects.get(
-                platform_type=MarketplaceChoices.MOY_SKLAD),
+                platform_type=MarketplaceChoices.MOY_SKLAD)
         )
         accounts_ya = Account.objects.filter(
             user=user,

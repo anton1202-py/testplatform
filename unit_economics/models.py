@@ -33,8 +33,6 @@ class ProductForMarketplacePrice(models.Model):
                                 on_delete=models.CASCADE, verbose_name='Продукт')
     wb_price = models.FloatField(
         verbose_name='Цена на Wildberries', null=True, blank=True)
-    ozon_price = models.FloatField(
-        verbose_name='Цена на Ozon', null=True, blank=True)
     yandex_price = models.FloatField(
         verbose_name='Цена на Yandex', null=True, blank=True)
     rrc = models.FloatField(
@@ -43,6 +41,36 @@ class ProductForMarketplacePrice(models.Model):
     class Meta:
         verbose_name = "Цены для маркетплейсов"
         verbose_name_plural = "Цены для маркетплейсов"
+
+
+class ProductOzonPrice(models.Model):
+    """
+    Описывает модель цен для ОЗОН.
+    Цены берутся из данных Моего Склада
+    """
+    product = models.ForeignKey(ProductPrice, related_name='ozon_price_product',
+                                on_delete=models.CASCADE, verbose_name='Продукт')
+    account = models.ForeignKey(
+        Account, related_name='ozon_price_account', on_delete=models.CASCADE, verbose_name='Аккаунт')
+    ozon_price = models.FloatField(
+        verbose_name='Цена на Ozon', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Цены для ОЗОН"
+        verbose_name_plural = "Цены для ОЗОН"
+
+
+class ProfitabilityMarketplaceProduct(models.Model):
+    """Рентабельность товара на маркетплейсе"""
+    mp_product = models.OneToOneField('MarketplaceProduct', related_name='mp_profitability',
+                                      on_delete=models.CASCADE, verbose_name='Продукт c с маркетплейса')
+    profit = models.FloatField(verbose_name='Прибыль', null=True, blank=True)
+    profitability = models.FloatField(
+        verbose_name='Рентабельность', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Рентабельность товара на маркетплейсе"
+        verbose_name_plural = "Рентабельность товара на маркетплейсе"
 
 
 class PostingGoods(models.Model):
@@ -108,8 +136,8 @@ class MarketplaceCategory(models.Model):
 
 class MarketplaceCommission(models.Model):
     """Модель для хранения процента комиссии на разных платформах"""
-    marketplace_product = models.ForeignKey(MarketplaceProduct, related_name='marketproduct_comission', on_delete=models.CASCADE,
-                                            verbose_name='Продукт на маркетплейсе', null=True, blank=True)
+    marketplace_product = models.OneToOneField(MarketplaceProduct, related_name='marketproduct_comission', on_delete=models.CASCADE,
+                                               verbose_name='Продукт на маркетплейсе', null=True, blank=True)
     fbs_commission = models.FloatField(
         verbose_name='Комиссия FBS', null=True, blank=True)
     fbo_commission = models.FloatField(

@@ -3,6 +3,7 @@
 *.db
 *.pyc
 .env
+.dump
 venv/
 db.sqlite
 pg_data/
