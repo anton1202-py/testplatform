@@ -1,17 +1,20 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from unit_economics.views import ProductPriceMSViewSet, ProductPriceWBViewSet, ProductPriceOZONViewSet, \
-    ProductMoySkladViewSet, ProductWBViewSet, ProductOZONViewSet
+from unit_economics.views import ProductPriceMSViewSet, ProductMoySkladViewSet, PlatformViewSet, \
+    MarketplaceProductViewSet, AccountViewSet, BrandViewSet, ProductNameViewSet, ProfitabilityAPIView
 
 router = DefaultRouter()
-router.register(r'product-create-db-my-sklad', ProductPriceMSViewSet)
-router.register(r'product-create-db-wb', ProductPriceWBViewSet, basename='unit_economics')
-router.register(r'product-create-db-ozon', ProductPriceOZONViewSet, basename='ozon_unit_economics')
-router.register(r'product-my-sklad', ProductMoySkladViewSet, basename='moysklad_unit_economics')
-router.register(r'product-wb', ProductWBViewSet, basename='wb_product_unit_economics')
-router.register(r'product-ozon', ProductOZONViewSet, basename='ozon_product_unit_economics')
+router.register(r'product-create-db-my-sklad', ProductPriceMSViewSet, basename='create_db')
+router.register(r'platforms', PlatformViewSet, basename='platform')
+router.register(r'marketplace-products', MarketplaceProductViewSet, basename='marketplace-product')  # работает тестим
+router.register(r'platforms', PlatformViewSet, basename='platform')
+router.register(r'accounts', AccountViewSet, basename='account')
+router.register(r'brands', BrandViewSet, basename='brand')
+router.register(r'product-names', ProductNameViewSet, basename='product-name')
+# router.register(r'commissions', MarketplaceCommissionViewSet, basename='commission')  # Не понятно надо ли это
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('api/profitability/<int:user_id>/', ProfitabilityAPIView.as_view(), name='profitability-api'),
 ]
 
