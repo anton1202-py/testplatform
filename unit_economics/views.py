@@ -88,15 +88,15 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
             account.authorization_fields['token'] = TOKEN_MY_SKLAD
             account.save()
         total_processed = 0  # Счетчик обработанных записей
+        moy_sklad_add_data_to_db()
+        wb_products_data_to_db()
+        wb_logistic_add_to_db()
+        wb_comission_add_to_db()
+        ozon_products_data_to_db()
+        ozon_comission_logistic_add_data_to_db()
+        yandex_add_products_data_to_db()
+        yandex_comission_logistic_add_data_to_db()
         profitability_calculate(user_id=user.id)
-        # moy_sklad_add_data_to_db()
-        # wb_products_data_to_db()
-        # wb_logistic_add_to_db()
-        # wb_comission_add_to_db()
-        # ozon_products_data_to_db()
-        # ozon_comission_logistic_add_data_to_db()
-        # yandex_add_products_data_to_db()
-        # yandex_comission_logistic_add_data_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
