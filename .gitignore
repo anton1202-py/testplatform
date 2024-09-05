@@ -7,6 +7,6 @@ venv/
 db.sqlite
 pg_data/
 node_modules
-migrations/
+**/migrations/
 static
 staticfiles
