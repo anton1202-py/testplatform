@@ -2,6 +2,8 @@ from analyticalplatform.celery import app
 from core.models import Account
 from unit_economics.models import (MarketplaceAction, ProductCostPrice,
                                    ProductPrice)
+from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
+                                            moy_sklad_costprice_calculate)
 from unit_economics.tasks_ozon import (ozon_action_article_price_to_db,
                                        ozon_action_data_to_db,
                                        ozon_comission_logistic_add_data_to_db,
