@@ -36,4 +36,12 @@ app.conf.beat_schedule = {
         "task": "unit_economics.periodic_tasks.update_yandex_product_list",
         "schedule": crontab(hour=2, minute=20)
     },
+    "unit_economics_product_costprice": {
+        "task": "unit_economics.periodic_tasks.moy_sklad_costprice_add_to_db",
+        "schedule": crontab(hour=2, minute=30)
+    },
+    "unit_economics_action_price": {
+        "task": "unit_economics.periodic_tasks.action_article_price_to_db",
+        "schedule": crontab(hour=3, minute=30)
+    },
 }

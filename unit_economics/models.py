@@ -16,12 +16,27 @@ class ProductPrice(models.Model):
         default=list, null=False, verbose_name="Баркод товара")
     product_type = models.CharField(
         max_length=255, verbose_name='Тип товара(продукты, комплекты)')
-    cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
-                                     verbose_name='Себестоимость товара')
+    cost_price = models.FloatField(verbose_name='Себестоимость товара', null=True, blank=True
+                                   )
 
     class Meta:
         verbose_name = "Продукт с ценами для Unit экономики"
         verbose_name_plural = "Продукты с ценами для Unit экономики"
+
+
+class ProductCostPrice(models.Model):
+    """
+    Описывает модель себестоимости Продукта
+    по методу оприходования по FIFO
+    """
+    product = models.OneToOneField(ProductPrice, related_name='costprice_product',
+                                   on_delete=models.CASCADE, verbose_name='Продукт')
+    cost_price = models.FloatField(
+        verbose_name='Себестоимость продукта', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Себестоимость продукта"
+        verbose_name_plural = "Себестоимость продукта"
 
 
 class ProductForMarketplacePrice(models.Model):
@@ -29,8 +44,8 @@ class ProductForMarketplacePrice(models.Model):
     Описывает модель цен для продукта на всех маркетплейсах.
     Цены берутся из данных Моего Склада
     """
-    product = models.ForeignKey(ProductPrice, related_name='price_product',
-                                on_delete=models.CASCADE, verbose_name='Продукт')
+    product = models.OneToOneField(ProductPrice, related_name='price_product',
+                                   on_delete=models.CASCADE, verbose_name='Продукт')
     wb_price = models.FloatField(
         verbose_name='Цена на Wildberries', null=True, blank=True)
     yandex_price = models.FloatField(
@@ -67,6 +82,8 @@ class ProfitabilityMarketplaceProduct(models.Model):
     profit = models.FloatField(verbose_name='Прибыль', null=True, blank=True)
     profitability = models.FloatField(
         verbose_name='Рентабельность', null=True, blank=True)
+    overheads = models.FloatField(
+        verbose_name='Накладные расходы', default=0.2)
 
     class Meta:
         verbose_name = "Рентабельность товара на маркетплейсе"
@@ -120,6 +137,22 @@ class MarketplaceProduct(models.Model):
         verbose_name_plural = "Продукт на Маркетплейсе"
 
 
+class MarketplaceProductPriceWithProfitability(models.Model):
+    """
+    Цена для продукта на маркетплейсе на основании комиссий и рентабельности
+    """
+    mp_product = models.OneToOneField(MarketplaceProduct, related_name='mp_product_profit_price',
+                                      on_delete=models.CASCADE, verbose_name='Продукт на маркетплейсе')
+    profit_price = models.FloatField(
+        verbose_name='Цена на основе рентабельности и с/с по оприходованию', null=True, blank=True)
+    usual_price = models.FloatField(
+        verbose_name='Цена на основе рентабельности и обычной с/с', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Цена для продукта на маркетплейсе на основании рентабельности"
+        verbose_name_plural = "Цена для продукта на маркетплейсе на основании рентабельности"
+
+
 class MarketplaceCategory(models.Model):
     """Описывает категорию товара на Маркетплейсе."""
     platform = models.ForeignKey(
@@ -154,8 +187,8 @@ class MarketplaceCommission(models.Model):
 
 class MarketplaceLogistic(models.Model):
     """Модель для хранения логистических затрат на разных платформах"""
-    marketplace_product = models.ForeignKey(MarketplaceProduct, related_name='marketproduct_logistic', on_delete=models.CASCADE,
-                                            verbose_name='Продукт на маркетплейсе', null=True, blank=True)
+    marketplace_product = models.OneToOneField(MarketplaceProduct, related_name='marketproduct_logistic', on_delete=models.CASCADE,
+                                               verbose_name='Продукт на маркетплейсе', null=True, blank=True)
     cost_logistic = models.FloatField(
         verbose_name='Логистические затраты', null=True, blank=True)
     cost_logistic_fbo = models.FloatField(
@@ -172,7 +205,10 @@ class MarketplaceAction(models.Model):
     """Акция на маркеплейсе"""
     platform = models.ForeignKey(
         Platform, related_name='ma_plaform', on_delete=models.CASCADE, verbose_name='Платформа')
-    action_number = models.IntegerField(verbose_name="Идентификатор акции")
+    account = models.ForeignKey(
+        Account, related_name='ma_accounts', on_delete=models.CASCADE, verbose_name='Аккаунт', null=True, blank=True)
+    action_number = models.CharField(
+        max_length=100, verbose_name="Идентификатор акции")
     action_name = models.CharField(
         max_length=255, verbose_name="Название акции", null=True, blank=True)
     date_start = models.DateField(

@@ -5,8 +5,12 @@ import telegram
 from django.db.models import Count, Q
 
 from analyticalplatform.settings import ADMINS_CHATID_LIST, TELEGRAM_TOKEN
-from unit_economics.models import (MarketplaceCategory, MarketplaceCommission,
-                                   MarketplaceLogistic, MarketplaceProduct,
+from core.models import Account, User
+from unit_economics.models import (MarketplaceAction, MarketplaceCategory,
+                                   MarketplaceCommission, MarketplaceLogistic,
+                                   MarketplaceProduct,
+                                   MarketplaceProductPriceWithProfitability,
+                                   ProductCostPrice,
                                    ProductForMarketplacePrice,
                                    ProductOzonPrice, ProductPrice,
                                    ProfitabilityMarketplaceProduct)
@@ -115,48 +119,65 @@ def add_marketplace_logistic_to_db(
         defaults=values_for_update, **search_params)
 
 
-def profitability_calculate(user, overheads=0.2):
+@sender_error_to_tg
+def profitability_calculate(user_id, overheads=0.2):
     """Расчет рентабельности по изменению для всей таблицы"""
-    mp_products_list = MarketplaceProduct.objects.filter(account__user=user)
+    user = User.objects.get(id=user_id)
+    mp_products_list = MarketplaceProduct.objects.filter(account__user=user).select_related(
+        'marketproduct_logistic').select_related('marketproduct_comission')
+    products_to_update = []
+    products_to_create = []
     for product in mp_products_list:
+
         if product.platform.name == 'OZON':
             account = product.account
             price = ProductOzonPrice.objects.get(
                 account=account, product=product.product).ozon_price
-            comission = MarketplaceCommission.objects.get(
-                marketplace_product=product).fbs_commission
-            logistic_cost = MarketplaceLogistic.objects.get(
-                marketplace_product=product).cost_logistic_fbs
+            comission = product.marketproduct_comission.fbs_commission
+            logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
         elif product.platform.name == 'Wildberries':
             price = ProductForMarketplacePrice.objects.get(
                 product=product.product).wb_price
-            comission = MarketplaceCommission.objects.get(
-                marketplace_product=product).fbs_commission
-            logistic_cost = MarketplaceLogistic.objects.get(
-                marketplace_product=product).cost_logistic
+            comission = product.marketproduct_comission.fbs_commission
+            logistic_cost = product.marketproduct_logistic.cost_logistic
         elif product.platform.name == 'Яндекс Маркет':
             price = ProductForMarketplacePrice.objects.get(
                 product=product.product).yandex_price
-            comission = MarketplaceCommission.objects.get(
-                marketplace_product=product).fbs_commission
-            logistic_cost = MarketplaceLogistic.objects.get(
-                marketplace_product=product).cost_logistic
-
+            comission = product.marketproduct_comission.fbs_commission
+            logistic_cost = product.marketproduct_logistic.cost_logistic
         product_cost_price = product.product.cost_price/100
 
         if price > 0:
+            search_params = {'mp_product': product}
+            try:
+                profitability_product = ProfitabilityMarketplaceProduct.objects.get(
+                    **search_params)
+                overheads = profitability_product.overheads
+            except ProfitabilityMarketplaceProduct.DoesNotExist:
+                overheads = overheads
             profit = round((price - float(product_cost_price) -
                             logistic_cost - comission - (overheads * price)), 2)
             profitability = round(((profit / price) * 100), 2)
-            # print(product.name, profit, profitability)
-            search_params = {'mp_product': product}
+
             values_for_update = {
                 "profit": profit,
                 "profitability": profitability
             }
-            ProfitabilityMarketplaceProduct.objects.update_or_create(
-                defaults=values_for_update, **search_params
-            )
+            if 'profitability_product' in locals():
+                # Обновляем существующий объект
+                profitability_product.profit = profit
+                profitability_product.profitability = profitability
+                products_to_update.append(profitability_product)
+            else:
+                # Создаем новый объект
+                products_to_create.append(ProfitabilityMarketplaceProduct(
+                    mp_product=product, **values_for_update))
+    if products_to_update:
+        ProfitabilityMarketplaceProduct.objects.bulk_update(
+            products_to_update, ['profit', 'profitability'])
+
+    if products_to_create:
+        ProfitabilityMarketplaceProduct.objects.bulk_create(products_to_create)
 
     result = ProfitabilityMarketplaceProduct.objects.aggregate(
         count_above_20=Count('id', filter=Q(profitability__gt=20)),
@@ -173,3 +194,116 @@ def profitability_calculate(user, overheads=0.2):
         count_below_minus_20=Count('id', filter=Q(profitability__lt=-20)),
     )
     return result
+
+
+@sender_error_to_tg
+def save_overheds_for_mp_product(mp_product_dict: dict):
+    """
+    Сохраняет рентабельность для каждого продукта
+
+    Входящие данные:
+        mp_product_dict: словарь типа {mp_product_id: product_overheads}
+        mp_product_id - id продлукта из таблицы MarketplaceProduct
+        product_overheads - накладные расходы в формате float (например 0.2)
+    """
+    for mp_product_id, product_overheads in mp_product_dict.items():
+        product_obj = MarketplaceProduct.objects.get(id=mp_product_id)
+        profitability_obj = ProfitabilityMarketplaceProduct.objects.get(
+            mp_product=product_obj)
+        profitability_obj.overheads = product_overheads
+        profitability_obj.save()
+
+
+@sender_error_to_tg
+def calculate_mp_price_with_profitability(user_id):
+    """Расчет цены товара на маркетплейсе на основе рентабельности"""
+    user = User.objects.get(id=user_id)
+    mp_products_list = MarketplaceProduct.objects.filter(account__user=user).select_related(
+        'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
+    products_to_update = []
+    products_to_create = []
+    for product in mp_products_list:
+        if product.platform.name == 'OZON':
+            comission = product.marketproduct_comission.fbs_commission
+            logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
+        else:
+            comission = product.marketproduct_comission.fbs_commission
+            logistic_cost = product.marketproduct_logistic.cost_logistic
+        if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
+            overheads = product.mp_profitability.overheads
+            profitability = product.mp_profitability.profitability
+            common_product_cost_price = product.product.cost_price/100
+            if ProductCostPrice.objects.filter(
+                    product=product.product).exists():
+                profit_product_cost_price = ProductCostPrice.objects.get(
+                    product=product.product).cost_price
+            else:
+                profit_product_cost_price = 0
+
+            # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
+            common_price = round(((common_product_cost_price/100 + comission + logistic_cost +
+                                   common_product_cost_price/100) / (1 - profitability/100 - overheads)), 2)
+
+            # Цена на основе себестоимости по оприходованию
+            enter_price = round(((profit_product_cost_price + comission + logistic_cost +
+                                  profit_product_cost_price) / (1 - profitability/100 - overheads)), 2)
+            search_params = {'mp_product': product}
+            try:
+                mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
+                    **search_params)
+
+            except MarketplaceProductPriceWithProfitability.DoesNotExist:
+                pass
+
+            values_for_update = {
+                "profit_price": enter_price,
+                "usual_price": common_price
+            }
+            if 'mp_product_price' in locals():
+                # Обновляем существующий объект
+                mp_product_price.profit_price = enter_price
+                mp_product_price.usual_price = common_price
+                products_to_update.append(mp_product_price)
+            else:
+                # Создаем новый объект
+                products_to_create.append(MarketplaceProductPriceWithProfitability(
+                    mp_product=product, **values_for_update))
+    if products_to_update:
+        MarketplaceProductPriceWithProfitability.objects.bulk_update(
+            products_to_update, ['profit_price', 'usual_price'])
+
+    if products_to_create:
+        MarketplaceProductPriceWithProfitability.objects.bulk_create(
+            products_to_create)
+
+
+def action_article_price_to_db():
+    """
+    Записывает возможные цены артикулов из акции
+    """
+    from unit_economics.tasks_ozon import (ozon_action_article_price_to_db,
+                                           ozon_action_data_to_db)
+    from unit_economics.tasks_wb import (wb_action_article_price_to_db,
+                                         wb_action_data_to_db)
+    from unit_economics.tasks_yandex import (yandex_action_article_price_to_db,
+                                             yandex_action_data_to_db)
+    ozon_action_data_to_db()
+    wb_action_data_to_db()
+    yandex_action_data_to_db()
+    accounts = Account.objects.all()
+    for account in accounts:
+        platform = account.platform
+        if platform.name == 'Wildberries':
+            wb_token = account.authorization_fields['token']
+            actions_data = MarketplaceAction.objects.filter(
+                account=account, platform=platform)
+            wb_action_article_price_to_db(
+                account, actions_data, platform, wb_token)
+        if platform.name == 'OZON':
+            actions_data = MarketplaceAction.objects.filter(
+                account=account, platform=platform)
+            ozon_action_article_price_to_db(account, actions_data, platform)
+        if platform.name == 'Yandex Market':
+            actions_data = MarketplaceAction.objects.filter(
+                account=account, platform=platform)
+            yandex_action_article_price_to_db(account, actions_data, platform)

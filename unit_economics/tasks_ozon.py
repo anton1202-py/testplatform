@@ -1,6 +1,9 @@
 import logging
+from datetime import datetime
 
-from api_requests.ozon_requests import (ozon_products_comission_info_from_api,
+from api_requests.ozon_requests import (ozon_actions_list,
+                                        ozon_actions_product_price_info,
+                                        ozon_products_comission_info_from_api,
                                         ozon_products_info_from_api)
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
@@ -8,7 +11,8 @@ from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
                                          add_marketplace_product_to_db,
                                          sender_error_to_tg)
-from unit_economics.models import MarketplaceProduct
+from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
+                                   MarketplaceProductInAction)
 
 logger = logging.getLogger(__name__)
 
@@ -112,3 +116,70 @@ def ozon_products_data_to_db():
                     sku, seller_article, category_number,
                     category_name, width,
                     height, length, weight)
+
+# @sender_error_to_tg
+
+
+def ozon_action_data_to_db():
+    """
+    Записывает данные акций OZON в базу данных.
+    """
+    accounts_ozon = Account.objects.filter(
+        platform=Platform.objects.get(
+            platform_type=MarketplaceChoices.OZON)
+    )
+    for account in accounts_ozon:
+        oz_token = account.authorization_fields['token']
+        ozon_client_id = account.authorization_fields['client_id']
+        actions_data = ozon_actions_list(oz_token, ozon_client_id)
+        for action in actions_data:
+            platform = account.platform
+            action_number = action['id']
+            action_name = action['title']
+            date_start = datetime.strptime(
+                action['date_start'], "%Y-%m-%dT%H:%M:%SZ")
+            date_finish = datetime.strptime(
+                action['date_end'], "%Y-%m-%dT%H:%M:%SZ")
+
+            search_params = {'platform': platform,
+                             'account': account, 'action_number': action_number}
+            values_for_update = {
+                "action_name": action_name,
+                "date_start": date_start,
+                "date_finish": date_finish
+            }
+            MarketplaceAction.objects.update_or_create(
+                defaults=values_for_update, **search_params)
+
+
+def ozon_action_article_price_to_db(account, actions_data, platform):
+    """
+    Записывает возможные цены артикулов OZON из акции
+    """
+
+    for data in actions_data:
+        oz_token = account.authorization_fields['token']
+        ozon_client_id = account.authorization_fields['client_id']
+        action_data = ozon_actions_product_price_info(
+            oz_token, ozon_client_id, data.action_number)
+        if action_data:
+            for action_oz in action_data:
+                nom_id = action_oz['id']
+                if MarketplaceProduct.objects.filter(
+                        account=account, sku=nom_id).exists():
+                    marketplace_product = MarketplaceProduct.objects.get(
+                        account=account, sku=nom_id)
+                    action = data
+                    product_price = action_oz['max_action_price']
+                    if action_oz['action_price'] != 0:
+                        status = True
+                    else:
+                        status = False
+                    search_params = {'action': action,
+                                     'marketplace_product': marketplace_product}
+                    values_for_update = {
+                        "product_price": product_price,
+                        "status": status
+                    }
+                    MarketplaceProductInAction.objects.update_or_create(
+                        defaults=values_for_update, **search_params)

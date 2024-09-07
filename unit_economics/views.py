@@ -9,12 +9,19 @@ from rest_framework.viewsets import ModelViewSet
 
 from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
                                          TOKEN_WB, TOKEN_YM)
+from api_requests.moy_sklad import moy_sklad_enter
+from api_requests.wb_requests import wb_actions_list
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
-from unit_economics.integrations import profitability_calculate
+from unit_economics.integrations import (calculate_mp_price_with_profitability,
+                                         profitability_calculate)
 from unit_economics.models import ProductPrice
+from unit_economics.periodic_tasks import (action_article_price_to_db,
+                                           moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import ProductPriceSerializer
-from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
+from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
+                                            moy_sklad_costprice_calculate,
+                                            moy_sklad_enters_calculate)
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
 from unit_economics.tasks_wb import (wb_categories_list,
@@ -69,23 +76,23 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
     def list(self, request):
         """Получение данных о продуктах из API и обновление базы данных"""
         user = request.user
-
-        account, created = Account.objects.get_or_create(
+        account = Account.objects.get(
             user=user,
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.MOY_SKLAD),
-            defaults={
-                'name': 'Мой склад',
-                'authorization_fields': {'token': TOKEN_MY_SKLAD}
-            }
         )
         # Если аккаунт уже существует, но токен не установлен, обновите его
-        if not created and account.authorization_fields.get('token') != TOKEN_MY_SKLAD:
-            account.authorization_fields['token'] = TOKEN_MY_SKLAD
-            account.save()
         total_processed = 0  # Счетчик обработанных записей
 
-        profitability_calculate(user)
+        # Наполнение базы акций
+        action_article_price_to_db()
+
+        # calculate_mp_price_with_profitability(user.id)
+        # moy_sklad_costprice_add_to_db()
+        # moy_sklad_costprice_calculate()
+        # moy_sklad_enters_calculate()
+        # print(len(enters_list))
+        # profitability_calculate(user.id)
         # moy_sklad_add_data_to_db()
 
         # wb_products_data_to_db()

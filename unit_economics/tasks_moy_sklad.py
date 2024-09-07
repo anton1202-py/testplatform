@@ -3,11 +3,14 @@ import logging
 import requests
 from django.db import transaction
 
-from api_requests.moy_sklad import moy_sklad_assortment
+from api_requests.moy_sklad import (get_assortiment_info, get_stock_info,
+                                    moy_sklad_assortment, moy_sklad_enter,
+                                    moy_sklad_positions_enter)
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
 from unit_economics.integrations import sender_error_to_tg
-from unit_economics.models import (ProductForMarketplacePrice,
+from unit_economics.models import (ProductCostPrice,
+                                   ProductForMarketplacePrice,
                                    ProductOzonPrice, ProductPrice)
 
 logger = logging.getLogger(__name__)
@@ -173,3 +176,172 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
         ProductOzonPrice.objects.update_or_create(
             defaults=values_for_update, **search_params
         )
+
+
+@sender_error_to_tg
+def moy_sklad_enters_calculate():
+    """
+    Считает поставки товара на Мой Склад.
+
+    Возвращает словарь вида:
+    {account:
+        {code:
+            {
+                'article_data': {'barcodes: [barcode_list], 'brand': brand}, 
+                'enter_data': {
+                    [
+                        {
+                            'date': enter_date,
+                            'price': price,
+                            'quantity': quantity,
+                            'overhead': overhead
+                        }
+                    ]
+                }
+            }
+        }
+    }
+
+    Где:
+        account - текущий аккаунт на Мой Склад
+        code - обозначение артикула в Мой Склад
+        [barcode_list] - список баркодов артикулов в Мой Склад
+        brand - бренд артикула
+        enter_date - дата поставки
+        price - стоимость поставки
+        quantity - количество артикула в текущей поставке
+        overhead - Накладные расходы
+    """
+    accounts_ms = Account.objects.filter(
+        platform=Platform.objects.get(
+            platform_type=MarketplaceChoices.MOY_SKLAD)
+    )
+    main_retuned_dict = {}
+    for account in accounts_ms:
+        token_ms = account.authorization_fields['token']
+        enters_list = moy_sklad_enter(token_ms)[:500]
+
+        enter_main_data = {}
+        # print(len(enters_list))
+
+        # x = len(enters_list)
+        for enter in enters_list:
+            enter_id = enter['id']
+            if 'moment' in enter:
+                enter_date = enter['moment']
+                positions = moy_sklad_positions_enter(token_ms, enter_id)
+                for position in positions:
+                    barcodes = []
+                    api_url = position['assortment']['meta']['href']
+                    assortiment_data = get_assortiment_info(
+                        token_ms, api_url)
+                    if assortiment_data['archived'] == False:
+                        quantity = position.get('quantity', 0)
+                        price = position.get('price', 0)
+                        overhead = position.get('overhead', 0)
+                        article = assortiment_data['code']
+
+                        if 'barcodes' in assortiment_data:
+                            barcode_list = assortiment_data['barcodes']
+                            for barcode_data in barcode_list:
+                                for key, barcode in barcode_data.items():
+                                    barcodes.append(barcode)
+                        attributes = assortiment_data['attributes']
+                        for attribute in attributes:
+                            if attribute['name'] == 'Бренд':
+                                brand = attribute['value']
+
+                        if article not in enter_main_data:
+                            enter_main_data[article] = {
+                                'article_data':
+                                    {
+                                        'barcodes': barcodes,
+                                        'brand': brand
+                                    },
+                                'enter_data': [
+                                    {
+                                        'date': enter_date,
+                                        'price': price,
+                                        'quantity': quantity,
+                                        'overhead': overhead
+                                    }]}
+                        else:
+                            enter_main_data[article]['enter_data'].append({
+                                'date': enter_date,
+                                'price': price,
+                                'quantity': quantity,
+                                'overhead': overhead
+                            })
+            # x -= 1
+            # print(x)
+        main_retuned_dict[account] = enter_main_data
+    return main_retuned_dict
+
+
+@sender_error_to_tg
+def moy_sklad_stock_data():
+    """
+    Возвращает информацию об остатках товара на Мой Склад.
+
+    Возвращает словарь вида:
+    {account: {code: stock}}
+
+    Где:
+        account - текущий аккаунт на Мой Склад
+        code - обозначение артикула в Мой Склад
+        stock - текущий остаток артикула
+    """
+    accounts_ms = Account.objects.filter(
+        platform=Platform.objects.get(
+            platform_type=MarketplaceChoices.MOY_SKLAD)
+    )
+    main_retuned_dict = {}
+    for account in accounts_ms:
+        token_ms = account.authorization_fields['token']
+        stocks_list = get_stock_info(token_ms)
+        stocks_data = {}
+        for stock_data in stocks_list:
+            code = stock_data['code']
+            stock = stock_data['stock']
+            stocks_data[code] = stock
+        main_retuned_dict[account] = stocks_data
+    return main_retuned_dict
+
+
+@sender_error_to_tg
+def moy_sklad_costprice_calculate():
+    """
+    Считает себестоимость товаров методом оприходования
+    """
+    enters_data = moy_sklad_enters_calculate()
+    stock_data = moy_sklad_stock_data()
+
+    account_cost_price_data = {}
+
+    for account, code_data in enters_data.items():
+        code_list = []
+        for code, article_info in code_data.items():
+            enters_data_list = article_info['enter_data']
+            sorted_enters_data_list = sorted(
+                enters_data_list, key=lambda x: x['date'], reverse=True)
+            summ = 0
+            amount = 0
+            overhead = 0
+            price = 0
+            for enter_data in sorted_enters_data_list:
+                summ += enter_data['quantity']
+                if code in stock_data[account]:
+                    if summ > stock_data[account][code]:
+                        overhead = enter_data['overhead']
+                        amount = enter_data['quantity']
+                        price = enter_data['price']
+                        break
+            if amount > 0:
+                cost_price = (price + overhead) / (amount * 100)
+            else:
+                cost_price = 0
+            inner_dict = {'barcodes': article_info['article_data']
+                          ['barcodes'], 'cost_price': cost_price}
+            code_list.append(inner_dict)
+        account_cost_price_data[account] = code_list
+    return account_cost_price_data

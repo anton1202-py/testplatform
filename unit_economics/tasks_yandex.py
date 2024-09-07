@@ -1,7 +1,10 @@
 import logging
 import math
+from datetime import datetime
 
-from api_requests.yandex_requests import (yandex_campaigns_data,
+from api_requests.yandex_requests import (yandex_actions_list,
+                                          yandex_actions_product_price_info,
+                                          yandex_campaigns_data,
                                           yandex_campaigns_from_business,
                                           yandex_comission_calculate)
 from core.enums import MarketplaceChoices
@@ -10,7 +13,8 @@ from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
                                          add_marketplace_product_to_db,
                                          sender_error_to_tg)
-from unit_economics.models import MarketplaceProduct
+from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
+                                   MarketplaceProductInAction)
 
 logger = logging.getLogger(__name__)
 
@@ -179,3 +183,73 @@ def yandex_comission_logistic_add_data_to_db():
             for prod_obj, value in article_logistic.items():
                 add_marketplace_comission_to_db(
                     prod_obj, fbs_commission=value['FBS'], fbo_commission=value['FBY'], dbs_commission=0, fbs_express_commission=value['EXPRESS'])
+
+
+@sender_error_to_tg
+def yandex_action_data_to_db():
+    """
+    Записывает данные акций YANDEX в базу данных.
+    """
+    accounts_ozon = Account.objects.filter(
+        platform=Platform.objects.get(
+            platform_type=MarketplaceChoices.YANDEX_MARKET)
+    )
+    for account in accounts_ozon:
+        ya_token = account.authorization_fields['token']
+        business_list = yandex_business_list(ya_token)
+        if business_list:
+            for business_id in business_list:
+                actions_data = yandex_actions_list(ya_token, business_id)
+                for action in actions_data:
+                    platform = account.platform
+                    action_number = f"{action['id']} {business_id}"
+                    action_name = action['name']
+                    date_start = datetime.fromisoformat(
+                        action['period']['dateTimeFrom'])
+                    date_finish = datetime.fromisoformat(
+                        action['period']['dateTimeTo'])
+                    search_params = {'platform': platform,
+                                     'account': account, 'action_number': action_number}
+                    values_for_update = {
+                        "action_name": action_name,
+                        "date_start": date_start,
+                        "date_finish": date_finish
+                    }
+                    MarketplaceAction.objects.update_or_create(
+                        defaults=values_for_update, **search_params)
+
+
+@sender_error_to_tg
+def yandex_action_article_price_to_db(account, actions_data, platform):
+    """
+    Записывает возможные цены артикулов YANDEX из акции
+    """
+    for data in actions_data:
+        ya_token = account.authorization_fields['token']
+        common_data = data.action_number
+        parts = common_data.split()
+        action_id = parts[0]
+        business_id = parts[1]
+        action_data = yandex_actions_product_price_info(
+            ya_token, business_id, action_id)
+        if action_data:
+            for action_ya in action_data:
+                nom_id = action_ya['offerId']
+                if MarketplaceProduct.objects.filter(
+                        account=account, sku=nom_id).exists():
+                    marketplace_product = MarketplaceProduct.objects.get(
+                        account=account, name=nom_id)
+                    action = data
+                    product_price = action_ya['params']['promocodeParams']['maxPrice']
+                    if action_ya['status'] == 'NOT_PARTICIPATING':
+                        status = False
+                    else:
+                        status = True
+                    search_params = {'action': action,
+                                     'marketplace_product': marketplace_product}
+                    values_for_update = {
+                        "product_price": product_price,
+                        "status": status
+                    }
+                    MarketplaceProductInAction.objects.update_or_create(
+                        defaults=values_for_update, **search_params)
