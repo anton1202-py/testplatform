@@ -275,35 +275,3 @@ def calculate_mp_price_with_profitability(user_id):
     if products_to_create:
         MarketplaceProductPriceWithProfitability.objects.bulk_create(
             products_to_create)
-
-
-def action_article_price_to_db():
-    """
-    Записывает возможные цены артикулов из акции
-    """
-    from unit_economics.tasks_ozon import (ozon_action_article_price_to_db,
-                                           ozon_action_data_to_db)
-    from unit_economics.tasks_wb import (wb_action_article_price_to_db,
-                                         wb_action_data_to_db)
-    from unit_economics.tasks_yandex import (yandex_action_article_price_to_db,
-                                             yandex_action_data_to_db)
-    ozon_action_data_to_db()
-    wb_action_data_to_db()
-    yandex_action_data_to_db()
-    accounts = Account.objects.all()
-    for account in accounts:
-        platform = account.platform
-        if platform.name == 'Wildberries':
-            wb_token = account.authorization_fields['token']
-            actions_data = MarketplaceAction.objects.filter(
-                account=account, platform=platform)
-            wb_action_article_price_to_db(
-                account, actions_data, platform, wb_token)
-        if platform.name == 'OZON':
-            actions_data = MarketplaceAction.objects.filter(
-                account=account, platform=platform)
-            ozon_action_article_price_to_db(account, actions_data, platform)
-        if platform.name == 'Yandex Market':
-            actions_data = MarketplaceAction.objects.filter(
-                account=account, platform=platform)
-            yandex_action_article_price_to_db(account, actions_data, platform)
