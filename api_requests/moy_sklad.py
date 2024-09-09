@@ -2,6 +2,7 @@ import json
 import logging
 
 import requests
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status, viewsets
@@ -193,3 +194,52 @@ def change_product_price(TOKEN_MY_SKLAD, platform, account_name, new_price, prod
     body = body.replace("\'", "\"")
     body = json.loads(body)
     response = requests.put(url=api_url, headers=headers, json=body)
+
+
+def picture_href_request(token_moy_sklad, api_url):
+    """
+    Достает ссылку по которой лежит картинка товара
+
+    Входящие переменные:
+        token_moy_sklad - токен учетной записи
+        api_url - URL со ссылкой
+    """
+    headers = {
+        'Authorization': f'Bearer {token_moy_sklad}',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': 'application/json'
+    }
+    response = requests.get(url=api_url, headers=headers)
+    link = ''
+    if response.status_code == 200:
+        data = response.json()
+        picture_list = data.get('rows', [])
+        for picture in picture_list:
+            if 'miniature' in picture:
+                link = picture['miniature']['downloadHref']
+                break
+
+    return link
+
+
+def get_picture_from_moy_sklad(token_moy_sklad, api_url):
+    """
+    Достает картинку продукта из Моего Склада
+
+    Входящие переменные:
+        token_moy_sklad - токен учетной записи
+        api_url - URL со ссылкой
+    """
+    response = requests.get(url=api_url, headers=headers)
+
+    headers = {
+        'Authorization': f'Bearer {token_moy_sklad}',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': 'application/json'
+    }
+    if response.status_code == 200:
+        # Создаем объект модели
+        # Получаем имя файла из URL
+        filename = api_url.split('/')[-1]
+        # Сохраняем изображение
+        return filename, ContentFile(response.content)
