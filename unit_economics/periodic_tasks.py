@@ -46,7 +46,7 @@ def update_yandex_product_list():
     yandex_comission_logistic_add_data_to_db()
 
 
-@app.task(bind=True)
+# @app.task(bind=True)
 def moy_sklad_costprice_add_to_db():
     """
     Записывает себестоимость (методом оприходования) товара в базу данных
