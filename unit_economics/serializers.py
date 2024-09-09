@@ -4,7 +4,7 @@ from core.models import Account, Platform
 from core.serializers import AccountsListSerializers
 from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
                                    ProductPrice,
-                                   ProfitabilityMarketplaceProduct)
+                                   ProfitabilityMarketplaceProduct, MarketplaceProductInAction, MarketplaceAction)
 
 
 class PlatformSerializer(serializers.ModelSerializer):
