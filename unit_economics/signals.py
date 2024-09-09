@@ -9,6 +9,8 @@ from unit_economics.models import MarketplaceCommission, MarketplaceLogistic
 @receiver(post_save, sender=MarketplaceCommission)
 def logistic_update(sender, instance, created, **kwargs):
     if created:
-        print(f'Создана новая запись: {instance.marketplace_product}')
+        pass
+        # print(f'Создана новая запись: {instance.marketplace_product}')
     else:
-        print(f'Обновлена запись: {instance.marketplace_product}')
+        pass
+        # print(f'Обновлена запись: {instance.marketplace_product}')

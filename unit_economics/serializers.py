@@ -55,7 +55,7 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         ]
 
     def get_rrc(self, obj):
-        return obj.product.price_product.first().rrc
+        return obj.product.price_product.rrc
 
     def get_price(self, obj):
         platform_name = obj.platform.name.lower()
