@@ -14,10 +14,13 @@ from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
 from api_requests.moy_sklad import change_product_price
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
-from unit_economics.integrations import (profitability_calculate,
+from unit_economics.integrations import (calculate_mp_price_with_profitability,
+                                         profitability_calculate,
                                          save_overheds_for_mp_product)
 from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
                                    ProductPrice)
+from unit_economics.periodic_tasks import (action_article_price_to_db,
+                                           moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
     AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
@@ -102,6 +105,9 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
         # profitability_calculate(user_id=user.id)
+        moy_sklad_costprice_add_to_db()
+        calculate_mp_price_with_profitability(user.id)
+        action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
