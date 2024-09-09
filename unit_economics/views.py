@@ -93,7 +93,7 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
             account.save()
         total_processed = 0  # Счетчик обработанных записей
         # change_product_price(TOKEN_MY_SKLAD)
-        moy_sklad_add_data_to_db()
+        # moy_sklad_add_data_to_db()
         wb_products_data_to_db()
         wb_logistic_add_to_db()
         wb_comission_add_to_db()

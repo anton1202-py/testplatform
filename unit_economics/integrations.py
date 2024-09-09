@@ -2,7 +2,7 @@ import logging
 import traceback
 
 import requests
-import telegram
+# import telegram
 from django.db.models import Count, Q
 
 from analyticalplatform.settings import ADMINS_CHATID_LIST, TELEGRAM_TOKEN
@@ -19,7 +19,7 @@ from unit_economics.models import (MarketplaceAction, MarketplaceCategory,
                                    ProfitabilityMarketplaceProduct)
 
 logger = logging.getLogger(__name__)
-bot = telegram.Bot(token=TELEGRAM_TOKEN)
+# bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
 
 # def sender_error_to_tg(func):
@@ -341,5 +341,5 @@ def update_price_info_from_user_request(data_dict: dict):
                                      new_price, product_obj.moy_sklad_product_number)
             else:
                 message = f"У продукта {product_obj.name} не могу обновить цену на {platform_name} {account_name}. В БД не нашел его ID с Мой склад"
-                for chat_id in ADMINS_CHATID_LIST:
-                    bot.send_message(chat_id=chat_id, text=message[:4000])
+                # for chat_id in ADMINS_CHATID_LIST:
+                #     bot.send_message(chat_id=chat_id, text=message[:4000])
