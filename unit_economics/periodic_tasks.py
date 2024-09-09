@@ -69,7 +69,7 @@ def moy_sklad_costprice_add_to_db():
                 )
 
 
-@app.task(bind=True)
+# @app.task(bind=True)
 def action_article_price_to_db():
     """
     Записывает возможные цены артикулов из акции
