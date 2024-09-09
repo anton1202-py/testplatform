@@ -1,8 +1,10 @@
 from rest_framework import serializers
-from core.models import Platform, Account
+
+from core.models import Account, Platform
 from core.serializers import AccountsListSerializers
-from unit_economics.models import ProductPrice, MarketplaceProduct, MarketplaceCommission, \
-    ProfitabilityMarketplaceProduct
+from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
+                                   ProductPrice,
+                                   ProfitabilityMarketplaceProduct)
 
 
 class PlatformSerializer(serializers.ModelSerializer):
@@ -30,17 +32,20 @@ class ProductNameSerializer(serializers.Serializer):
 class ProductPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductPrice
-        fields = ['id', 'name', 'brand', 'vendor', 'barcode', 'product_type', 'cost_price']
+        fields = ['id', 'name', 'brand', 'vendor', 'barcode',
+                  'product_type', 'cost_price']
 
 
 class MarketplaceProductSerializer(serializers.ModelSerializer):
     brand = serializers.CharField(source='product.brand', read_only=True)
-    cost_price = serializers.FloatField(source='product.cost_price', read_only=True)
+    cost_price = serializers.FloatField(
+        source='product.cost_price', read_only=True)
     rrc = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     commission = serializers.SerializerMethodField()
     logistic_cost = serializers.SerializerMethodField()
-    overheads = serializers.FloatField(source='mp_profitability.overheads', read_only=True)
+    overheads = serializers.FloatField(
+        source='mp_profitability.overheads', read_only=True)
 
     class Meta:
         model = MarketplaceProduct
@@ -59,7 +64,8 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         elif platform_name == 'yandex':
             return obj.product.price_product.first().yandex_price
         elif platform_name == 'ozon':
-            ozon_price = obj.product.ozon_price_product.filter(account=obj.account).first()
+            ozon_price = obj.product.ozon_price_product.filter(
+                account=obj.account).first()
             return ozon_price.ozon_price if ozon_price else None
         return None
 
@@ -88,7 +94,8 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
 class MarketplaceCommissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketplaceCommission
-        fields = ['fbs_commission', 'fbo_commission', 'dbs_commission', 'fbs_express_commission']
+        fields = ['fbs_commission', 'fbo_commission',
+                  'dbs_commission', 'fbs_express_commission']
 
 
 class ProfitabilityMarketplaceProductSerializer(serializers.ModelSerializer):

@@ -108,6 +108,7 @@ def moy_sklad_add_data_to_db():
 
                 product_info = {
                     'account': account,
+                    'moy_sklad_product_number': item.get('id', ''),
                     'name': item.get('name', ''),
                     'brand': brand,
                     'vendor': item.get('article', ''),
@@ -126,7 +127,8 @@ def moy_sklad_add_data_to_db():
                     values_for_update = {
                         "barcode": product_info['barcode'],
                         "product_type": product_info['product_type'],
-                        "cost_price": product_info['cost_price']
+                        "cost_price": product_info['cost_price'],
+                        "moy_sklad_product_number": product_info['moy_sklad_product_number']
                     }
                     product_obj_сort = ProductPrice.objects.update_or_create(
                         defaults=values_for_update,

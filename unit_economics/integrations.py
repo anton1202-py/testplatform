@@ -1,11 +1,14 @@
 import logging
 import traceback
 
+import requests
 import telegram
 from django.db.models import Count, Q
 
 from analyticalplatform.settings import ADMINS_CHATID_LIST, TELEGRAM_TOKEN
-from core.models import Account, User
+from api_requests.moy_sklad import change_product_price
+from core.enums import MarketplaceChoices
+from core.models import Account, Platform, User
 from unit_economics.models import (MarketplaceAction, MarketplaceCategory,
                                    MarketplaceCommission, MarketplaceLogistic,
                                    MarketplaceProduct,
@@ -275,3 +278,67 @@ def calculate_mp_price_with_profitability(user_id):
     if products_to_create:
         MarketplaceProductPriceWithProfitability.objects.bulk_create(
             products_to_create)
+
+
+def update_price_info_from_user_request(data_dict: dict):
+    """
+    Обновляет цены на Мой склад и в БД, если пользователь отправил запрос
+    {
+        'user_id': user_id.
+        'account_id': account_id,
+        'platform_name': platform_name,
+        'products_data': [
+            {
+                'marketplaceproduct_id': marketplaceproduct_id,
+                'new_price': new_price,
+                'overhead': overhead
+            }
+        ]
+    }
+    """
+    
+    user_id = data_dict.get('user_id', '')
+    account_id = data_dict.get('account_id', '')
+    platform_name = data_dict.get('platform_name', '')
+    products_data = data_dict.get('products_data', '')
+
+    for data in products_data:
+        marketplaceproduct_id = data.get('marketplaceproduct_id', '')
+        new_price = data.get('new_price', '')
+        overhead = data.get('overhead', '')
+        mp_product_obj = MarketplaceProduct.objects.get(id=marketplaceproduct_id)
+        product_obj = mp_product_obj.product
+        account_obj = Account.objects.get(id=account_id)
+        moy_sklad_account = Account.objects.get(
+            user=User.objects.get(id-user_id),
+            platform=Platform.objects.get(
+                platform_type=MarketplaceChoices.MOY_SKLAD)
+        )
+        moy_sklad_token = moy_sklad_account.authorization_fields['token']
+        if overhead:
+            profitability_obj = ProfitabilityMarketplaceProduct.objects.get(
+                mp_product=mp_product_obj)
+            profitability_obj.overheads = overhead
+            profitability_obj.save()
+        if new_price:
+            productprice_obj = ProductForMarketplacePrice.objects.get(
+                product=product_obj)
+            if platform_name == 'Wildberries':
+                productprice_obj.wb_price = new_price
+                productprice_obj.save()
+            if platform_name == 'Yandex Market':
+                productprice_obj.yandex_price = new_price
+                productprice_obj.save()
+            if platform_name == 'OZON':
+                ozonproductprice_obj = ProductOzonPrice.objects.get(
+                    product=product_obj, account=account_obj)
+                ozonproductprice_obj.ozon_price = new_price
+                ozonproductprice_obj.save()
+            account_name = Account.objects.get(id=account_id).name
+            if product_obj.moy_sklad_product_number:
+                change_product_price(moy_sklad_token, platform_name, account_name,
+                                     new_price, product_obj.moy_sklad_product_number)
+            else:
+                message = f"У продукта {product_obj.name} не могу обновить цену на {platform_name} {account_name}. В БД не нашел его ID с Мой склад"
+                for chat_id in ADMINS_CHATID_LIST:
+                    bot.send_message(chat_id=chat_id, text=message[:4000])

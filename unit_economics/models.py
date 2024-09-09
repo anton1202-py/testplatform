@@ -7,6 +7,8 @@ class ProductPrice(models.Model):
     """Модель для хранения цены товара на разных платформах"""
     account = models.ForeignKey(
         Account, related_name='accounts', on_delete=models.CASCADE, verbose_name='Аккаунт')
+    moy_sklad_product_number = models.CharField(
+        max_length=255, null=True, blank=True, verbose_name="ID продукта с Моего Склада")
     name = models.TextField(null=False, verbose_name="Название товара")
     brand = models.TextField(null=True, blank=True,
                              verbose_name="Бренд товара")
@@ -18,6 +20,8 @@ class ProductPrice(models.Model):
         max_length=255, verbose_name='Тип товара(продукты, комплекты)')
     cost_price = models.FloatField(verbose_name='Себестоимость товара', null=True, blank=True
                                    )
+    image = models.ImageField(upload_to='images/', verbose_name='Картинка продукта', null=True, blank=True
+                              )
 
     class Meta:
         verbose_name = "Продукт с ценами для Unit экономики"

@@ -4,24 +4,25 @@ import requests
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status, viewsets
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
                                          TOKEN_WB, TOKEN_YM)
-from api_requests.moy_sklad import moy_sklad_enter
-from api_requests.wb_requests import wb_actions_list
+from api_requests.moy_sklad import change_product_price
 from core.enums import MarketplaceChoices
-from core.models import Account, Platform
-from unit_economics.integrations import (calculate_mp_price_with_profitability,
-                                         profitability_calculate)
-from unit_economics.models import ProductPrice
-from unit_economics.periodic_tasks import (action_article_price_to_db,
-                                           moy_sklad_costprice_add_to_db)
-from unit_economics.serializers import ProductPriceSerializer
-from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
-                                            moy_sklad_costprice_calculate,
-                                            moy_sklad_enters_calculate)
+from core.models import Account, Platform, User
+from unit_economics.integrations import (profitability_calculate,
+                                         save_overheds_for_mp_product)
+from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
+                                   ProductPrice)
+from unit_economics.serializers import (
+    AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
+    MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
+    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer)
+from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
 from unit_economics.tasks_wb import (wb_categories_list,
@@ -76,337 +77,36 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
     def list(self, request):
         """Получение данных о продуктах из API и обновление базы данных"""
         user = request.user
-        account = Account.objects.get(
+
+        account, created = Account.objects.get_or_create(
             user=user,
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.MOY_SKLAD),
+            defaults={
+                'name': 'Мой склад',
+                'authorization_fields': {'token': TOKEN_MY_SKLAD}
+            }
         )
         # Если аккаунт уже существует, но токен не установлен, обновите его
+        if not created and account.authorization_fields.get('token') != TOKEN_MY_SKLAD:
+            account.authorization_fields['token'] = TOKEN_MY_SKLAD
+            account.save()
         total_processed = 0  # Счетчик обработанных записей
-
-        # Наполнение базы акций
-        action_article_price_to_db()
-
-        # calculate_mp_price_with_profitability(user.id)
-        # moy_sklad_costprice_add_to_db()
-        # moy_sklad_costprice_calculate()
-        # moy_sklad_enters_calculate()
-        # print(len(enters_list))
-        # profitability_calculate(user.id)
+        change_product_price(TOKEN_MY_SKLAD)
         # moy_sklad_add_data_to_db()
-
         # wb_products_data_to_db()
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
-
         # ozon_products_data_to_db()
         # ozon_comission_logistic_add_data_to_db()
-
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
-
+        # profitability_calculate(user_id=user.id)
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
             {'status': 'success', 'message': f'Total processed: {total_processed}',
-                'data': serializer.data},
-            status=status.HTTP_200_OK)
-
-
-class ProductPriceWBViewSet(ModelViewSet):
-    """ViewSet для работы с продуктами на платформе WB"""
-    # queryset = ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
-    queryset = ProductPrice.objects.all()
-    serializer_class = ProductPriceSerializer
-
-    def list(self, request):
-        """Получение данных о продуктах из API и обновление базы данных"""
-        user = request.user
-        account, created = Account.objects.get_or_create(
-            user=user,
-            platform=Platform.objects.get(
-                platform_type=MarketplaceChoices.WILDBERRIES),
-            defaults={
-                'name': 'Магазин WB',
-                'authorization_fields': {'token': TOKEN_WB}
-            }
-        )
-        # Если аккаунт уже существует, но токен не установлен, обновите его
-        if not created and account.authorization_fields.get('token') != TOKEN_WB:
-            account.authorization_fields['token'] = TOKEN_WB
-            account.save()
-        # Начальные параметры запроса
-        request_body = {
-            "settings": {
-                "cursor": {
-                    "limit": 100
-                },
-                "filter": {
-                    "withPhoto": -1
-                }
-            }
-        }
-        all_product_data = []  # Для сбора всех данных о продуктах
-        while True:
-            api_url = "https://content-api.wildberries.ru/content/v2/get/cards/list"
-            headers = {
-                'Authorization': f"Bearer {TOKEN_WB}",
-                'Content-Type': 'application/json'
-            }
-
-            product_data = []  # Список для хранения данных о продуктах
-            response = requests.post(
-                api_url, headers=headers, json=request_body)
-            if response.status_code == 200:
-                data = response.json()
-                products = data.get('cards', [])
-                if not products:
-                    break  # Если больше нет данных для обработки, выйти из цикла
-                for item in products:
-                    # Добавляем продукты и информацию о них в список
-                    product_info = {
-                        'account': account,
-                        'platform': Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES),
-                        'sku': item.get('nmID', ''),
-                        'name': item.get('title', ''),  # Имя товара
-                        'brand': item.get('brand', ''),  # Брэнд товара
-                        'vendor': item.get('vendorCode', ''),  # Артикул товара
-                        # Баркод товара
-                        'barcode': item.get('sizes', [{}])[0].get('skus', '')[0],
-                        'type': '',  # Артикул товара WB
-                        'price': 0,  # Цена товара со скидкой
-                        'cost_price': 0,  # Себестоимость товара из МойСклад
-                    }
-
-                    moy_sklad_product = ProductPrice.objects.filter(
-                        platform=Platform.objects.get(
-                            platform_type=MarketplaceChoices.MOY_SKLAD),
-                        barcode__contains=product_info['barcode']).first()
-                    if moy_sklad_product is not None:
-                        product_info['price'] = moy_sklad_product.price
-                        product_info['cost_price'] = moy_sklad_product.cost_price
-                    else:
-                        print(
-                            f"Product with barcode {product_info['barcode']} not found in MoySklad")
-                    product_data.append(product_info)
-
-                # Добавляем данные в общий список
-                all_product_data.extend(product_data)
-
-                # Параметры пагинации
-                cursor = data.get('cursor', {})
-                updatedAt = cursor.get('updatedAt')
-                nmID = cursor.get('nmID')
-
-                if not updatedAt or not nmID:
-                    break  # Если пагинация закончена, выйти из цикла
-
-                request_body['settings']['cursor'] = {
-                    "limit": 100,
-                    "updatedAt": updatedAt,
-                    "nmID": nmID
-                }
-
-                # Обновление существующих записей или создание новых
-                with transaction.atomic():
-                    for product_info in all_product_data:
-                        ProductPrice.objects.update_or_create(
-                            account=product_info['account'],
-                            platform=product_info['platform'],
-                            sku=product_info['sku'],
-                            defaults=product_info
-                        )
-
-        updated_products = ProductPrice.objects.filter(
-            platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
-        serializer = ProductPriceSerializer(updated_products, many=True)
-        return Response(
-            {'status': 'success', 'data': serializer.data},
-            status=status.HTTP_200_OK)
-
-
-# class ProductPriceOZONViewSet(ModelViewSet):
-#     """ViewSet для работы с продуктами на платформе Ozon"""
-#     queryset = ProductPrice.objects.filter(
-#         platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
-#     serializer_class = ProductPriceSerializer
-#
-#     def list(self, request):
-#         """Получение данных о продуктах из API и обновление базы данных"""
-#         user = request.user
-#         platform = Platform.objects.get(platform_type=MarketplaceChoices.OZON)
-#
-#         # Получаем все аккаунты для данного пользователя и платформы
-#         accounts = Account.objects.filter(user=user, platform=platform)
-#
-#         # Проверяем каждый аккаунт на соответствие поля authorization_fields
-#         account = None
-#         for acc in accounts:
-#             auth_fields = acc.authorization_fields
-#             if auth_fields.get('token') == TOKEN_OZON and auth_fields.get('client_id') == OZON_ID:
-#                 account = acc
-#                 break
-#
-#         # Если соответствующий аккаунт не найден, создаем новый
-#         if account is None:
-#             account = Account.objects.create(
-#                 user=user,
-#                 platform=platform,
-#                 name='Магазин Ozon',
-#                 authorization_fields={'token': TOKEN_OZON, 'client_id': OZON_ID}
-#             )
-#         while True:
-#             api_url = "https://api-seller.ozon.ru/v2/product/list?filter=\"visibility\": \"ALL\"&limit=1000"
-#             headers = {
-#                 'Client-Id': OZON_ID,
-#                 'Api-Key': TOKEN_OZON
-#             }
-#
-#             product_data = []  # Список для хранения данных о продуктах
-#             response = requests.post(api_url, headers=headers)
-#             if response.status_code == 200:
-#                 data = response.json()
-#                 products = data.get("result", {}).get("items", [])
-#                 products_ids = [product["product_id"] for product in products]
-#                 print(len(products_ids))
-#                 for product_id in products_ids:
-#                     response_info = requests.post("https://api-seller.ozon.ru/v2/product/info/list",
-#                                                   json={"product_id": [product_id]}, headers=headers)
-#                     if response_info.status_code != 200:
-#                         return Response({'status': 'error', 'message': 'Failed to get product info'},
-#                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#                     response_info = response_info.json().get("result", {}).get("items", [])
-#                     if response_info:
-#                         # Поскольку это список, берем первый элемент
-#                         product_info = response_info[0]
-#                         # Добавляем продукты и информацию о них в список
-#                         product_info_item = {
-#                             'account': account,
-#                             'platform': Platform.objects.get(platform_type=MarketplaceChoices.OZON),
-#                             'sku': product_info.get('sku', ''),
-#                             'name': product_info.get('name', ''),  # Имя товара
-#                             'brand': product_info.get('offer_id', ''),  # Брэнд товара
-#                             'vendor': '',  # Артикул товара
-#                             'barcode': product_info.get('barcode', ''),  # Баркод товара
-#                             'type': '',  # Тип товара
-#                             'price': 0,  # Цена товара со скидкой
-#                             'cost_price': 0,  # Себестоимость товара из МойСклад
-#                         }
-#                         print(f"111111: {product_info_item}")
-#                         moy_sklad_product = ProductPrice.objects.filter(
-#                             platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD),
-#                             barcode__contains=product_info_item['barcode']).first()
-#                         if moy_sklad_product is not None:
-#                             product_info_item['price'] = moy_sklad_product.price
-#                             product_info_item['cost_price'] = moy_sklad_product.cost_price
-#                         else:
-#                             print(f"Product with barcode {product_info_item['barcode']} not found in MoySklad")
-#                         print(f"Количество объектов для записи: {len(product_data)}")
-#                         product_data.append(product_info_item)
-#
-#             # Обновление существующих записей или создание новых
-#                 with transaction.atomic():
-#                     for product_info_item in product_data:
-#                         ProductPrice.objects.update_or_create(
-#                             account=product_info_item['account'],
-#                             platform=product_info_item['platform'],
-#                             sku=product_info_item['sku'],
-#                             defaults=product_info_item
-#                         )
-#                         print(7)
-#
-#             updated_products = ProductPrice.objects.filter(
-#                 platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
-#             serializer = ProductPriceSerializer(updated_products, many=True)
-#             return Response(
-#                 {'status': 'success', 'data': serializer.data},
-#                 status=status.HTTP_200_OK)
-
-class ProductPriceOZONViewSet(ModelViewSet):
-    # queryset = ProductPrice.objects.filter(
-    #     platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
-    queryset = ProductPrice.objects.all()
-    serializer_class = ProductPriceSerializer
-
-    def list(self, request):
-        user = request.user
-        platform = Platform.objects.get(platform_type=MarketplaceChoices.OZON)
-        accounts = Account.objects.filter(user=user, platform=platform)
-
-        account = None
-        for acc in accounts:
-            auth_fields = acc.authorization_fields
-            if auth_fields.get('token') == TOKEN_OZON and auth_fields.get('client_id') == OZON_ID:
-                account = acc
-                break
-
-        if account is None:
-            account = Account.objects.create(
-                user=user,
-                platform=platform,
-                name='Магазин Ozon',
-                authorization_fields={
-                    'token': TOKEN_OZON, 'client_id': OZON_ID}
-            )
-
-        product_data = []  # Список для хранения данных о продуктах
-
-        api_url = "https://api-seller.ozon.ru/v2/product/list?filter=\"visibility\": \"ALL\"&limit=1000"
-        headers = {
-            'Client-Id': OZON_ID,
-            'Api-Key': TOKEN_OZON
-        }
-
-        response = requests.post(api_url, headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            products = data.get("result", {}).get("items", [])
-            products_ids = [product["product_id"] for product in products]
-            response_info = requests.post("https://api-seller.ozon.ru/v2/product/info/list",
-                                          json={"product_id": products_ids}, headers=headers)
-            response_info = response_info.json().get("result", {}).get("items", [])
-            print(response_info)
-            for product in response_info:
-                product_info_item = {
-                    'account': account,
-                    'platform': Platform.objects.get(platform_type=MarketplaceChoices.OZON),
-                    'sku': product.get('sku', ''),
-                    'name': product.get('name', ''),
-                    'brand': product.get('offer_id', ''),
-                    'vendor': '',
-                    'barcode': product.get('barcode', ''),
-                    'type': '',
-                    'price': 0,
-                    'cost_price': 0,
-                }
-                moy_sklad_product = ProductPrice.objects.filter(
-                    platform=Platform.objects.get(
-                        platform_type=MarketplaceChoices.MOY_SKLAD),
-                    barcode__contains=product_info_item['barcode']).first()
-                if moy_sklad_product:
-                    product_info_item['price'] = moy_sklad_product.price
-                    product_info_item['cost_price'] = moy_sklad_product.cost_price
-                else:
-                    print(
-                        f"Product with barcode {product_info_item['barcode']} not found in MoySklad")
-                print(f"Количество объектов для записи: {len(product_data)}")
-                product_data.append(product_info_item)
-
-    # Обновление существующих записей или создание новых
-        with transaction.atomic():
-            for product_info_item in product_data:
-                ProductPrice.objects.update_or_create(
-                    account=product_info_item['account'],
-                    platform=product_info_item['platform'],
-                    sku=product_info_item['sku'],
-                    defaults=product_info_item
-                )
-
-        updated_products = ProductPrice.objects.filter(
-            platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
-        serializer = ProductPriceSerializer(updated_products, many=True)
-        return Response(
-            {'status': 'success', 'data': serializer.data},
+             'data': serializer.data},
             status=status.HTTP_200_OK)
 
 
@@ -418,17 +118,125 @@ class ProductMoySkladViewSet(ModelViewSet):
     serializer_class = ProductPriceSerializer
 
 
-class ProductWBViewSet(ModelViewSet):
-    # queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
-    #             .annotate(product_count=Count('id')))
-    queryset = (ProductPrice.objects.all()
-                .annotate(product_count=Count('id')))
-    serializer_class = ProductPriceSerializer
+class PlatformViewSet(viewsets.ReadOnlyModelViewSet):
+    """Получаем платформы(магазины) текущего пользователя"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = PlatformSerializer
+
+    def get_queryset(self):
+        return Platform.objects.filter(accounts__user=self.request.user).distinct()
 
 
-class ProductOZONViewSet(ModelViewSet):
-    # queryset = (ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.OZON))
-    #             .annotate(product_count=Count('id')))
-    queryset = (ProductPrice.objects.all()
-                .annotate(product_count=Count('id')))
-    serializer_class = ProductPriceSerializer
+class AccountViewSet(viewsets.ReadOnlyModelViewSet):
+    """Получаем аккаунты текущего пользователя"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = AccountSerializer
+
+    def get_queryset(self):
+        return Account.objects.filter(user=self.request.user)
+
+
+class BrandViewSet(viewsets.ViewSet):
+    """Получаем бренды товаров текущего пользователя"""
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        brands = ProductPrice.objects.filter(mp_product__account__user=self.request.user).values_list('brand',
+                                                                                                      flat=True).distinct()
+        serializer = BrandSerializer(instance=brands, many=True)
+        return Response(serializer.data)
+
+
+class ProductNameViewSet(viewsets.ViewSet):
+    """Получаем название товаров текущего пользователя"""
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        product_names = (ProductPrice.objects.filter(mp_product__account__user=self.request.user)
+                         .values_list('name', flat=True).distinct())
+        serializer = ProductNameSerializer(instance=product_names, many=True)
+        return Response(serializer.data)
+
+
+class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
+    """Получаем товары для выбранной платформы + фильтрация по данным от пользователя"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = MarketplaceProductSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = MarketplaceProduct.objects.filter(account__user=user)
+
+        platform_id = self.request.query_params.get('platform_id')
+        account_id = self.request.query_params.get('account_id')
+        brand = self.request.query_params.get('brand')
+        product_name = self.request.query_params.get('product_name')
+        # Фильтрация по умолчанию по платформе "Wildberries"
+        if not platform_id:
+            platform_id = 1  # ID платформы "Wildberries"
+
+        if platform_id:
+            queryset = queryset.filter(platform_id=platform_id)
+        if account_id:
+            queryset = queryset.filter(account_id=account_id)
+        if brand:
+            queryset = queryset.filter(product__brand=brand)
+        if product_name:
+            queryset = queryset.filter(product__name__icontains=product_name)
+
+        return queryset
+
+
+class ProfitabilityAPIView(GenericAPIView):
+    """
+    API для расчета рентабельности и сохранения накладных расходов.
+    """
+    serializer_class = ProfitabilityMarketplaceProductSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        GET-запрос для расчета рентабельности всех товаров пользователя.
+        """
+        user_id = self.kwargs.get('user_id')
+
+        try:
+            result = profitability_calculate(user_id)
+            return Response(result, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, *args, **kwargs):
+        """
+        POST-запрос для обновления накладных расходов и пересчета рентабельности.
+        Входящие данные:
+        mp_product_dict: словарь типа {mp_product_id: product_overheads}
+        mp_product_id - id продлукта из таблицы MarketplaceProduct
+        product_overheads - накладные расходы в формате float (например 0.2)
+        """
+        overheads_data = request.data.get('overheads_data', {})
+        user_id = request.data.get('user_id')
+
+        if not overheads_data or not user_id:
+            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Сохраняем накладные расходы
+            save_overheds_for_mp_product(overheads_data)
+
+            # Пересчитываем рентабельность
+            result = profitability_calculate(user_id)
+
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+# class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = MarketplaceCommissionSerializer
+#
+#     def get_queryset(self):
+#         # Получаем все комиссии, возможна фильтрация по товару
+#         product_id = self.request.query_params.get('product')
+#         if product_id:
+#             return MarketplaceCommission.objects.filter(marketplace_product__product_id=product_id)
+#         return MarketplaceCommission.objects.none()

@@ -1,3 +1,4 @@
+import json
 import logging
 
 import requests
@@ -154,3 +155,41 @@ def get_stock_info(TOKEN_MY_SKLAD):
     else:
         message = f'Ошибка при вызове метода {api_url}: {response.status_code}. {response.text}'
         print(message)
+
+
+def change_product_price(TOKEN_MY_SKLAD, platform, account_name, new_price, product_id):
+    """
+    Изменение цены на продукт на Мой Склад
+
+    Входящие переменные:
+        TOKEN_MY_SKLAD - токен учетной записи
+    """
+    OZON_ACCOUNT_NAME = {
+        'Ozon Envium': 'ОЗОН Evium',
+        'Озон Комбо': 'ОЗОН Combo',
+        'Озон спейс': 'ОЗОН Market Space'
+    }
+    marketplace_dict = {'WIldberries': 'WB',
+                        'Yandex Market': 'Яндекс'
+                        }
+    api_url = f'https://api.moysklad.ru/api/remap/1.2/entity/product/{product_id}'
+    headers = {
+        'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': 'application/json'
+    }
+    response = requests.get(url=api_url, headers=headers)
+    salePrices = response.json()['salePrices']
+    print(salePrices)
+
+    for sp in salePrices:
+        if platform != 'OZON':
+            if sp['priceType']['name'] == f"Цена {marketplace_dict[platform]} после скидки":
+                sp['value'] = new_price
+        else:
+            if sp['priceType']['name'] == f"Цена {OZON_ACCOUNT_NAME[account_name]}":
+                sp['value'] = new_price
+    body = '{"salePrices":' + str(salePrices) + '}'
+    body = body.replace("\'", "\"")
+    body = json.loads(body)
+    response = requests.put(url=api_url, headers=headers, json=body)
