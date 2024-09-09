@@ -83,40 +83,45 @@ def ozon_products_data_to_db():
     """Записывает данные о продуктах OZON в базу данных"""
     users = User.objects.all()
     for user in users:
-        account_sklad = Account.objects.get(
+        if Account.objects.filter(
             user=user,
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.MOY_SKLAD),
-        )
-        accounts_ozon = Account.objects.filter(
-            user=user,
-            platform=Platform.objects.get(
-                platform_type=MarketplaceChoices.OZON)
-        )
-        for account in accounts_ozon:
-            ozon_token = account.authorization_fields['token']
-            ozon_client_id = account.authorization_fields['client_id']
-            main_data = ozon_products_info_from_api(ozon_token, ozon_client_id)
-            for data in main_data:
-                platform = Platform.objects.get(
+        ).exists():
+            account_sklad = Account.objects.get(
+                user=user,
+                platform=Platform.objects.get(
+                    platform_type=MarketplaceChoices.MOY_SKLAD),
+            )
+            accounts_ozon = Account.objects.filter(
+                user=user,
+                platform=Platform.objects.get(
                     platform_type=MarketplaceChoices.OZON)
-                name = data['name']
-                sku = data['id']
-                seller_article = data['offer_id']
-                barcode = data['barcode']
-                category_number = data['description_category_id']
-                category_name = ''
-                width = data['width']/10
-                height = data['height']/10
-                length = data['depth']/10
-                weight = data['weight']/1000
-
-                add_marketplace_product_to_db(
-                    account_sklad, barcode,
-                    account, platform, name,
-                    sku, seller_article, category_number,
-                    category_name, width,
-                    height, length, weight)
+            )
+            for account in accounts_ozon:
+                ozon_token = account.authorization_fields['token']
+                ozon_client_id = account.authorization_fields['client_id']
+                main_data = ozon_products_info_from_api(ozon_token, ozon_client_id)
+                for data in main_data:
+                    platform = Platform.objects.get(
+                        platform_type=MarketplaceChoices.OZON)
+                    name = data['name']
+                    sku = data['id']
+                    seller_article = data['offer_id']
+                    barcode = data['barcode']
+                    category_number = data['description_category_id']
+                    category_name = ''
+                    width = data['width']/10
+                    height = data['height']/10
+                    length = data['depth']/10
+                    weight = data['weight']/1000
+    
+                    add_marketplace_product_to_db(
+                        account_sklad, barcode,
+                        account, platform, name,
+                        sku, seller_article, category_number,
+                        category_name, width,
+                        height, length, weight)
 
 # @sender_error_to_tg
 

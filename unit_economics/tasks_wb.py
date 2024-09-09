@@ -128,41 +128,47 @@ def wb_products_data_to_db():
     users = User.objects.all()
     for user in users:
         print(user)
+
         print(Platform.objects.get(
             platform_type=MarketplaceChoices.MOY_SKLAD))
-        account_sklad = Account.objects.get(
+        if Account.objects.filter(
             user=user,
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.MOY_SKLAD),
-        )
-        accounts_wb = Account.objects.filter(
-            user=user,
-            platform=Platform.objects.get(
-                platform_type=MarketplaceChoices.WILDBERRIES)
-        )
-        for account in accounts_wb:
-            token_wb = account.authorization_fields['token']
-            main_data = wb_article_data_from_api(token_wb)
-            for data in main_data:
-                platform = Platform.objects.get(
+        ).exists():
+            account_sklad = Account.objects.get(
+                user=user,
+                platform=Platform.objects.get(
+                    platform_type=MarketplaceChoices.MOY_SKLAD),
+            )
+            accounts_wb = Account.objects.filter(
+                user=user,
+                platform=Platform.objects.get(
                     platform_type=MarketplaceChoices.WILDBERRIES)
-                name = data['title']
-                sku = data['nmID']
-                seller_article = data['vendorCode']
-                barcode = data['sizes'][0]['skus'][0]
-                category_number = data['subjectID']
-                category_name = data['subjectName']
-                width = data['dimensions']['width']
-                height = data['dimensions']['height']
-                length = data['dimensions']['length']
-                weight = 0
+            )
+            for account in accounts_wb:
+                token_wb = account.authorization_fields['token']
+                main_data = wb_article_data_from_api(token_wb)
+                for data in main_data:
+                    platform = Platform.objects.get(
+                        platform_type=MarketplaceChoices.WILDBERRIES)
+                    name = data['title']
+                    sku = data['nmID']
+                    seller_article = data['vendorCode']
+                    barcode = data['sizes'][0]['skus'][0]
+                    category_number = data['subjectID']
+                    category_name = data['subjectName']
+                    width = data['dimensions']['width']
+                    height = data['dimensions']['height']
+                    length = data['dimensions']['length']
+                    weight = 0
 
-                add_marketplace_product_to_db(
-                    account_sklad, barcode,
-                    account, platform, name,
-                    sku, seller_article, category_number,
-                    category_name, width,
-                    height, length, weight)
+                    add_marketplace_product_to_db(
+                        account_sklad, barcode,
+                        account, platform, name,
+                        sku, seller_article, category_number,
+                        category_name, width,
+                        height, length, weight)
 
 
 # @sender_error_to_tg

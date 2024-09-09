@@ -42,55 +42,59 @@ def yandex_add_products_data_to_db():
     """
     users = User.objects.all()
     for user in users:
-
-        account_sklad = Account.objects.get(
+        if Account.objects.filter(
             user=user,
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.MOY_SKLAD)
-        )
-        accounts_ya = Account.objects.filter(
-            user=user,
-            platform=Platform.objects.get(
-                platform_type=MarketplaceChoices.YANDEX_MARKET)
-        )
-        for account in accounts_ya:
-            token_ya = account.authorization_fields['token']
-            business_list = yandex_business_list(token_ya)
-            if business_list:
-                for business_id in business_list:
-                    articles_data = yandex_campaigns_from_business(
-                        token_ya, business_id)
-                    for data in articles_data:
-                        if 'marketSku' in data['mapping']:
-                            platform = Platform.objects.get(
-                                platform_type=MarketplaceChoices.YANDEX_MARKET)
-                            market_data = data.get('mapping', '')
-                            product_data = data.get('offer', '')
-                            barcode = product_data.get('barcodes', 0)
-                            if barcode:
-                                barcode = barcode[0]
-                                name = market_data.get('marketSkuName', '')
-                                sku = market_data.get('marketSku', 0)
-                                seller_article = product_data.get(
-                                    'offerId', '')
-                                category_number = market_data.get(
-                                    'marketCategoryId', 0)
-                                category_name = market_data.get(
-                                    'marketCategoryName', '')
+        ).exists():
+            account_sklad = Account.objects.get(
+                user=user,
+                platform=Platform.objects.get(
+                    platform_type=MarketplaceChoices.MOY_SKLAD)
+            )
+            accounts_ya = Account.objects.filter(
+                user=user,
+                platform=Platform.objects.get(
+                    platform_type=MarketplaceChoices.YANDEX_MARKET)
+            )
+            for account in accounts_ya:
+                token_ya = account.authorization_fields['token']
+                business_list = yandex_business_list(token_ya)
+                if business_list:
+                    for business_id in business_list:
+                        articles_data = yandex_campaigns_from_business(
+                            token_ya, business_id)
+                        for data in articles_data:
+                            if 'marketSku' in data['mapping']:
+                                platform = Platform.objects.get(
+                                    platform_type=MarketplaceChoices.YANDEX_MARKET)
+                                market_data = data.get('mapping', '')
+                                product_data = data.get('offer', '')
+                                barcode = product_data.get('barcodes', 0)
+                                if barcode:
+                                    barcode = barcode[0]
+                                    name = market_data.get('marketSkuName', '')
+                                    sku = market_data.get('marketSku', 0)
+                                    seller_article = product_data.get(
+                                        'offerId', '')
+                                    category_number = market_data.get(
+                                        'marketCategoryId', 0)
+                                    category_name = market_data.get(
+                                        'marketCategoryName', '')
 
-                                if 'weightDimensions' in product_data:
-                                    width = product_data['weightDimensions']['width']
-                                    height = product_data['weightDimensions']['height']
-                                    length = product_data['weightDimensions']['length']
-                                    if 'weight' in product_data['weightDimensions']:
-                                        weight = product_data['weightDimensions']['weight']
-                                add_marketplace_product_to_db(
-                                    account_sklad, barcode,
-                                    account, platform, name,
-                                    sku, seller_article, category_number,
-                                    category_name, width,
-                                    height, length, weight
-                                )
+                                    if 'weightDimensions' in product_data:
+                                        width = product_data['weightDimensions']['width']
+                                        height = product_data['weightDimensions']['height']
+                                        length = product_data['weightDimensions']['length']
+                                        if 'weight' in product_data['weightDimensions']:
+                                            weight = product_data['weightDimensions']['weight']
+                                    add_marketplace_product_to_db(
+                                        account_sklad, barcode,
+                                        account, platform, name,
+                                        sku, seller_article, category_number,
+                                        category_name, width,
+                                        height, length, weight
+                                    )
 
 
 # @sender_error_to_tg
