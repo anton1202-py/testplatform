@@ -127,6 +127,9 @@ def wb_products_data_to_db():
     """Записывает данные о продуктах ВБ в базу данных"""
     users = User.objects.all()
     for user in users:
+        print(user)
+        print(Platform.objects.get(
+            platform_type=MarketplaceChoices.MOY_SKLAD))
         account_sklad = Account.objects.get(
             user=user,
             platform=Platform.objects.get(
