@@ -11,15 +11,16 @@ from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
 from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
-                                         add_marketplace_product_to_db,
-                                         sender_error_to_tg)
+                                         add_marketplace_product_to_db)
 from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
                                    MarketplaceProductInAction)
+
+#  sender_error_to_tg)
 
 logger = logging.getLogger(__name__)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def yandex_business_list(TOKEN_YM):
     """Возвращает список business_id с аккаунта продавцы"""
     main_data = yandex_campaigns_data(TOKEN_YM)
@@ -32,7 +33,7 @@ def yandex_business_list(TOKEN_YM):
     return business_list
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def yandex_add_products_data_to_db():
     """Записывает данные артикулов в базу данных
 
@@ -92,7 +93,7 @@ def yandex_add_products_data_to_db():
                                 )
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def yandex_comission_logistic_add_data_to_db():
     """
     Записывает комиссии и затраты на логистику YANDEX MARKET в базу данных
@@ -185,7 +186,7 @@ def yandex_comission_logistic_add_data_to_db():
                     prod_obj, fbs_commission=value['FBS'], fbo_commission=value['FBY'], dbs_commission=0, fbs_express_commission=value['EXPRESS'])
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def yandex_action_data_to_db():
     """
     Записывает данные акций YANDEX в базу данных.
@@ -219,7 +220,7 @@ def yandex_action_data_to_db():
                         defaults=values_for_update, **search_params)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def yandex_action_article_price_to_db(account, actions_data, platform):
     """
     Записывает возможные цены артикулов YANDEX из акции

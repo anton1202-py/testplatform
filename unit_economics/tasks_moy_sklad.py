@@ -8,7 +8,7 @@ from api_requests.moy_sklad import (get_assortiment_info, get_stock_info,
                                     moy_sklad_positions_enter)
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
-from unit_economics.integrations import sender_error_to_tg
+# from unit_economics.integrations import sender_error_to_tg
 from unit_economics.models import (ProductCostPrice,
                                    ProductForMarketplacePrice,
                                    ProductOzonPrice, ProductPrice)
@@ -22,7 +22,7 @@ OZON_ACCOUNT_NAME = {
 }
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def moy_sklad_add_data_to_db():
     """
     Записывает данные Мой Склад в базу данных
@@ -139,7 +139,7 @@ def moy_sklad_add_data_to_db():
                         product_obj, product_info['price_info'], account_names)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names):
     """"Записывает цены для маркетплейсов с Мой Склад"""
     rrc = 0
@@ -180,7 +180,7 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
         )
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def moy_sklad_enters_calculate():
     """
     Считает поставки товара на Мой Склад.
@@ -280,7 +280,7 @@ def moy_sklad_enters_calculate():
     return main_retuned_dict
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def moy_sklad_stock_data():
     """
     Возвращает информацию об остатках товара на Мой Склад.
@@ -310,7 +310,7 @@ def moy_sklad_stock_data():
     return main_retuned_dict
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def moy_sklad_costprice_calculate():
     """
     Считает себестоимость товаров методом оприходования

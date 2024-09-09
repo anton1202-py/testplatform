@@ -9,15 +9,16 @@ from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
 from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
-                                         add_marketplace_product_to_db,
-                                         sender_error_to_tg)
+                                         add_marketplace_product_to_db)
 from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
                                    MarketplaceProductInAction)
+
+#  sender_error_to_tg)
 
 logger = logging.getLogger(__name__)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def wb_categories_list(TOKEN_WB):
     """Возвращает список категорий товаров текущего пользователя"""
     main_data = wb_article_data_from_api(TOKEN_WB)
@@ -28,7 +29,7 @@ def wb_categories_list(TOKEN_WB):
     return categories_dict
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def wb_comission_add_to_db():
     """
     Записывает комиссии ВБ в базу данных
@@ -58,7 +59,7 @@ def wb_comission_add_to_db():
                         )
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def wb_logistic_add_to_db():
     """
     Записывает затраты на логистику ВБ в базу данных
@@ -103,7 +104,7 @@ def wb_logistic_add_to_db():
                 good, comission)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def wb_article_price_info(TOKEN_WB):
     """
     Возвращает словарь типа {nm_id: price_with_discount}
@@ -118,8 +119,10 @@ def wb_article_price_info(TOKEN_WB):
             article_price_info[data['nmID']] = discounted_price
         return article_price_info
 
+#
+# @sender_error_to_tg
 
-@sender_error_to_tg
+
 def wb_products_data_to_db():
     """Записывает данные о продуктах ВБ в базу данных"""
     users = User.objects.all()

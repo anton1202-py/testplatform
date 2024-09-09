@@ -22,23 +22,23 @@ logger = logging.getLogger(__name__)
 bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
 
-def sender_error_to_tg(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            tb_str = traceback.format_exc()
-            message_error = (f'Ошибка в функции: {func.__name__}\n'
-                             f'Функция выполняет: {func.__doc__}\n'
-                             f'Ошибка\n: {e}\n\n'
-                             f'Техническая информация:\n {tb_str}')
-            for chat_id in ADMINS_CHATID_LIST:
-                bot.send_message(chat_id=chat_id, text=message_error[:4000])
+# def sender_error_to_tg(func):
+#     def wrapper(*args, **kwargs):
+#         try:
+#             return func(*args, **kwargs)
+#         except Exception as e:
+#             tb_str = traceback.format_exc()
+#             message_error = (f'Ошибка в функции: {func.__name__}\n'
+#                              f'Функция выполняет: {func.__doc__}\n'
+#                              f'Ошибка\n: {e}\n\n'
+#                              f'Техническая информация:\n {tb_str}')
+#             for chat_id in ADMINS_CHATID_LIST:
+#                 bot.send_message(chat_id=chat_id, text=message_error[:4000])
 
-    return wrapper
+#     return wrapper
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def add_marketplace_product_to_db(
         account_sklad, barcode,
         account, platform, name,
@@ -89,7 +89,7 @@ def add_marketplace_product_to_db(
     MarketplaceProduct.objects.bulk_create(objects_for_create)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def add_marketplace_comission_to_db(
         product_obj, fbs_commission=None, fbo_commission=None, dbs_commission=None, fbs_express_commission=None):
     """
@@ -106,7 +106,7 @@ def add_marketplace_comission_to_db(
         defaults=values_for_update, **search_params)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def add_marketplace_logistic_to_db(
         product_obj, cost_logistic=None, cost_logistic_fbo=None, cost_logistic_fbs=None):
     """
@@ -122,7 +122,7 @@ def add_marketplace_logistic_to_db(
         defaults=values_for_update, **search_params)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def profitability_calculate(user_id, overheads=0.2):
     """Расчет рентабельности по изменению для всей таблицы"""
     user = User.objects.get(id=user_id)
@@ -199,7 +199,7 @@ def profitability_calculate(user_id, overheads=0.2):
     return result
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def save_overheds_for_mp_product(mp_product_dict: dict):
     """
     Сохраняет рентабельность для каждого продукта
@@ -217,7 +217,7 @@ def save_overheds_for_mp_product(mp_product_dict: dict):
         profitability_obj.save()
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def calculate_mp_price_with_profitability(user_id):
     """Расчет цены товара на маркетплейсе на основе рентабельности"""
     user = User.objects.get(id=user_id)
@@ -296,7 +296,7 @@ def update_price_info_from_user_request(data_dict: dict):
         ]
     }
     """
-    
+
     user_id = data_dict.get('user_id', '')
     account_id = data_dict.get('account_id', '')
     platform_name = data_dict.get('platform_name', '')
@@ -306,7 +306,8 @@ def update_price_info_from_user_request(data_dict: dict):
         marketplaceproduct_id = data.get('marketplaceproduct_id', '')
         new_price = data.get('new_price', '')
         overhead = data.get('overhead', '')
-        mp_product_obj = MarketplaceProduct.objects.get(id=marketplaceproduct_id)
+        mp_product_obj = MarketplaceProduct.objects.get(
+            id=marketplaceproduct_id)
         product_obj = mp_product_obj.product
         account_obj = Account.objects.get(id=account_id)
         moy_sklad_account = Account.objects.get(

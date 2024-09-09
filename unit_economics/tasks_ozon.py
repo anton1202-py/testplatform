@@ -9,15 +9,16 @@ from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
 from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
-                                         add_marketplace_product_to_db,
-                                         sender_error_to_tg)
+                                         add_marketplace_product_to_db)
 from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
                                    MarketplaceProductInAction)
+
+                                        #  sender_error_to_tg)
 
 logger = logging.getLogger(__name__)
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def ozon_price_articles(TOKEN_OZON, OZON_ID):
     """
     Возвращает словарь типа {product_id: price_after_discount}
@@ -30,7 +31,7 @@ def ozon_price_articles(TOKEN_OZON, OZON_ID):
     return price_dict
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def ozon_comission_logistic_add_data_to_db():
     """
     Записывает комиссии и затрат на логистику OZON в базу данных
@@ -77,7 +78,7 @@ def ozon_comission_logistic_add_data_to_db():
                         f'В модели MarketplaceProduct (ОЗОН) нет sku {data["product_id"]}')
 
 
-@sender_error_to_tg
+# @sender_error_to_tg
 def ozon_products_data_to_db():
     """Записывает данные о продуктах OZON в базу данных"""
     users = User.objects.all()
