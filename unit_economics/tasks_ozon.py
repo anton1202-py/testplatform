@@ -3,6 +3,7 @@ from datetime import datetime
 
 from api_requests.ozon_requests import (ozon_actions_list,
                                         ozon_actions_product_price_info,
+                                        ozon_product_info_with_sku_data,
                                         ozon_products_comission_info_from_api,
                                         ozon_products_info_from_api)
 from core.enums import MarketplaceChoices
@@ -13,7 +14,7 @@ from unit_economics.integrations import (add_marketplace_comission_to_db,
 from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
                                    MarketplaceProductInAction)
 
-                                        #  sender_error_to_tg)
+#  sender_error_to_tg)
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +102,16 @@ def ozon_products_data_to_db():
             for account in accounts_ozon:
                 ozon_token = account.authorization_fields['token']
                 ozon_client_id = account.authorization_fields['client_id']
-                main_data = ozon_products_info_from_api(ozon_token, ozon_client_id)
+                main_data = ozon_products_info_from_api(
+                    ozon_token, ozon_client_id)
                 for data in main_data:
+                    ozon_sku = ''
+                    article_info = ozon_product_info_with_sku_data(
+                        ozon_token, ozon_client_id, data['id'])
+                    if article_info:
+                        ozon_sku = article_info.get('sku', '')
+                        if not ozon_sku:
+                            ozon_sku = article_info.get('fbo_sku', '')
                     platform = Platform.objects.get(
                         platform_type=MarketplaceChoices.OZON)
                     name = data['name']
@@ -115,13 +124,13 @@ def ozon_products_data_to_db():
                     height = data['height']/10
                     length = data['depth']/10
                     weight = data['weight']/1000
-    
+
                     add_marketplace_product_to_db(
                         account_sklad, barcode,
                         account, platform, name,
                         sku, seller_article, category_number,
                         category_name, width,
-                        height, length, weight)
+                        height, length, weight, ozon_sku)
 
 # @sender_error_to_tg
 

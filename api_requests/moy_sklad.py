@@ -230,16 +230,18 @@ def get_picture_from_moy_sklad(token_moy_sklad, api_url):
         token_moy_sklad - токен учетной записи
         api_url - URL со ссылкой
     """
-    response = requests.get(url=api_url, headers=headers)
-
     headers = {
         'Authorization': f'Bearer {token_moy_sklad}',
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
+    print('api_url', api_url)
+    response = requests.get(url=api_url, headers=headers)
+
     if response.status_code == 200:
         # Создаем объект модели
         # Получаем имя файла из URL
-        filename = api_url.split('/')[-1]
+
+        filename = f'{api_url.split("/")[-1]}.jpg'
         # Сохраняем изображение
         return filename, ContentFile(response.content)

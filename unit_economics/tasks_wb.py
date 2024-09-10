@@ -127,10 +127,6 @@ def wb_products_data_to_db():
     """Записывает данные о продуктах ВБ в базу данных"""
     users = User.objects.all()
     for user in users:
-        print(user)
-
-        print(Platform.objects.get(
-            platform_type=MarketplaceChoices.MOY_SKLAD))
         if Account.objects.filter(
             user=user,
             platform=Platform.objects.get(
@@ -176,7 +172,6 @@ def wb_action_data_to_db():
     """
     Записывает данные акций ВБ в базу данных.
     """
-    print('Доблны сохранится акйии вб')
     accounts_wb = Account.objects.filter(
         platform=Platform.objects.get(
             platform_type=MarketplaceChoices.WILDBERRIES)

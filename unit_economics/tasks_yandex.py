@@ -13,7 +13,8 @@ from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
                                          add_marketplace_product_to_db)
 from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
-                                   MarketplaceProductInAction)
+                                   MarketplaceProductInAction,
+                                   ProductForMarketplacePrice)
 
 #  sender_error_to_tg)
 
@@ -71,12 +72,15 @@ def yandex_add_products_data_to_db():
                                 market_data = data.get('mapping', '')
                                 product_data = data.get('offer', '')
                                 barcode = product_data.get('barcodes', 0)
+
                                 if barcode:
                                     barcode = barcode[0]
                                     name = market_data.get('marketSkuName', '')
                                     sku = market_data.get('marketSku', 0)
                                     seller_article = product_data.get(
                                         'offerId', '')
+                                    if barcode == 6937888221576 or barcode == '6937888221576':
+                                        print(sku, product_data)
                                     category_number = market_data.get(
                                         'marketCategoryId', 0)
                                     category_name = market_data.get(
@@ -129,10 +133,14 @@ def yandex_comission_logistic_add_data_to_db():
                     request_data = []
 
                     for data in request_article_list:
+                        product_obj = data.product
+                        price = ProductForMarketplacePrice.objects.get(
+                            product=product_obj).yandex_price
                         if data.weight:
                             inner_request_dict = {
                                 "categoryId": data.category.category_number,
-                                "price": 2000,  # float(data.product.ya_price),
+                                # float(data.product.ya_price),
+                                "price": price,
                                 "length": data.length,
                                 "width": data.width,
                                 "height": data.height,
@@ -157,25 +165,29 @@ def yandex_comission_logistic_add_data_to_db():
                             weight=article_data['weight']
                         )
                         for prod_obj in product_objects:
+
                             product_comission = 0
-                            delivary_to_customer = 0
+                            delivery_to_customer = 0
                             middle_mile = 0
                             express_delivery = 0
                             sorting = 0
+                            cross_regional = 0
 
                             for amount in comission['tariffs']:
                                 if amount['type'] == 'FEE':
                                     product_comission = amount['amount']
-                                if amount['type'] == 'DELIVERY_TO_CUSTOMER':
-                                    delivary_to_customer = amount['amount']
-                                if amount['type'] == 'MIDDLE_MILE':
+                                elif amount['type'] == 'DELIVERY_TO_CUSTOMER':
+                                    delivery_to_customer = amount['amount']
+                                elif amount['type'] == 'MIDDLE_MILE':
                                     middle_mile = amount['amount']
-                                if amount['type'] == 'SORTING':
+                                elif amount['type'] == 'SORTING':
                                     sorting += amount['amount']
-                                if amount['type'] == 'EXPRESS_DELIVERY':
+                                elif amount['type'] == 'CROSSREGIONAL_DELIVERY':
+                                    cross_regional = amount['amount']
+                                elif amount['type'] == 'EXPRESS_DELIVERY':
                                     express_delivery = amount['amount']
-                            logistic_comission = delivary_to_customer + \
-                                middle_mile + express_delivery + sorting
+                            logistic_comission = delivery_to_customer + \
+                                middle_mile + express_delivery + sorting + cross_regional
                             add_marketplace_logistic_to_db(
                                 prod_obj, cost_logistic=product_comission, cost_logistic_fbo=None, cost_logistic_fbs=None)
 

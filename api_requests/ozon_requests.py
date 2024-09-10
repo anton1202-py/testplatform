@@ -140,6 +140,34 @@ def ozon_products_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_id='', com
         # bot.send_message(chat_id=CHAT_ID_ADMIN, text=message)
 
 
+def ozon_product_info_with_sku_data(token_ozon, ozon_id, product_id):
+    """
+    Получаем артикул OZON по которому нужны данные
+
+    Входящие данные:
+        token_ozon - API токен польователя
+        ozon_id - номер Client_id кабинета пользователя
+        product_id - идентификатор товара на Озоне.
+    """
+    api_url = 'https://api-seller.ozon.ru/v2/product/info'
+    payload = json.dumps(
+        {
+            "product_id": product_id,
+        }
+    )
+    headers = {
+        'Client-Id': ozon_id,
+        'Api-Key': token_ozon
+    }
+    response = requests.request(
+        "POST", api_url, headers=headers, data=payload)
+    if response.status_code == 200:
+        all_data = json.loads(response.text)["result"]
+        return all_data
+    else:
+        message = f'статус код {response.status_code} у {api_url}. {response.text}'
+
+
 def ozon_products_comission_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_id='', common_data=[]):
     """
     Получаем список всех артикулов OZON с информацией о комиссиях

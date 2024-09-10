@@ -44,7 +44,7 @@ def add_marketplace_product_to_db(
         account, platform, name,
         sku, seller_article, category_number,
         category_name, width,
-        height, length, weight):
+        height, length, weight, ozon_sku=''):
     """
     Записывает данные о продуктах маркетплейсов после сопоставления с основными продуктами в базу данных
     """
@@ -71,7 +71,8 @@ def add_marketplace_product_to_db(
                     width=width,
                     height=height,
                     length=length,
-                    weight=weight
+                    weight=weight,
+                    ozon_sku=ozon_sku
                 )
                 objects_for_create.append(product_obj)
             else:
@@ -83,7 +84,8 @@ def add_marketplace_product_to_db(
                     width=width,
                     height=height,
                     length=length,
-                    weight=weight
+                    weight=weight,
+                    ozon_sku=ozon_sku
                 )
         continue
     MarketplaceProduct.objects.bulk_create(objects_for_create)

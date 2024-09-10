@@ -124,6 +124,8 @@ class MarketplaceProduct(models.Model):
         max_length=255, verbose_name="Название товара", null=True, blank=True)
     sku = models.CharField(
         max_length=255, verbose_name="Идентификатор товара на платформе")
+    ozon_sku = models.CharField(
+        max_length=255, verbose_name="Ozon sku для получения ссылки на товар", null=True, blank=True)
     seller_article = models.CharField(
         max_length=255, null=False, verbose_name="Артикул продавца")
     barcode = models.JSONField(
