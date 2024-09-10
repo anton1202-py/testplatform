@@ -25,14 +25,8 @@ from unit_economics.periodic_tasks import (action_article_price_to_db,
 from unit_economics.serializers import (
     AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
-<<<<<<< HEAD
-    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer)
-from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
-                                            moy_sklad_costprice_calculate)
-=======
     ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer, MarketplaceActionSerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
->>>>>>> 61a2df81a23e4d9424812a0870adeede680e260a
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
 from unit_economics.tasks_wb import (wb_categories_list,
@@ -172,9 +166,7 @@ class ProductNameViewSet(viewsets.ViewSet):
 
 
 class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
-    """Получаем товары для выбранной платформы + фильтрация по данным от пользователя.
-        + поиск по полям 'name', 'barcode', пример запроса GET /api/marketplace-products/?search=123456789
-    """
+    """Получаем товары для выбранной платформы + фильтрация по данным от пользователя"""
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductSerializer
     filter_backends = [SearchFilter]  # Подключаем поиск
