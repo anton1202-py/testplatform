@@ -3,7 +3,9 @@ import logging
 import requests
 from django.db import transaction
 from django.db.models import Count
+from django.utils import timezone
 from rest_framework import status, viewsets
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -98,18 +100,18 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
             account.save()
         total_processed = 0  # Счетчик обработанных записей
         # change_product_price(TOKEN_MY_SKLAD)
-        moy_sklad_add_data_to_db()
-        wb_products_data_to_db()
-        wb_logistic_add_to_db()
-        wb_comission_add_to_db()
-        ozon_products_data_to_db()
-        ozon_comission_logistic_add_data_to_db()
-        yandex_add_products_data_to_db()
-        yandex_comission_logistic_add_data_to_db()
-        profitability_calculate(user_id=user.id)
+        # moy_sklad_add_data_to_db()
+        # wb_products_data_to_db()
+        # wb_logistic_add_to_db()
+        # wb_comission_add_to_db()
+        # ozon_products_data_to_db()
+        # ozon_comission_logistic_add_data_to_db()
+        # yandex_add_products_data_to_db()
+        # yandex_comission_logistic_add_data_to_db()
+        # profitability_calculate(user_id=user.id)
         moy_sklad_costprice_add_to_db()
         calculate_mp_price_with_profitability(user.id)
-        # action_article_price_to_db()
+        action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -167,9 +169,17 @@ class ProductNameViewSet(viewsets.ViewSet):
 
 
 class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
-    """Получаем товары для выбранной платформы + фильтрация по данным от пользователя"""
+    """Получаем товары для выбранной платформы + фильтрация по данным от пользователя
+       + поля для поиска 'name', 'barcode' пример запроса GET /api/marketplace-products/?search=123456789
+       + поля для сортировки 'profit', 'profitability' пример запроса GET /api/marketplace-products/?ordering=profit
+       (или -profit для сортировки по убыванию)
+    """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductSerializer
+    # Подключаем поиск и сортировку
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['name', 'barcode']  # Поля для поиска
+    ordering_fields = ['profit', 'profitability']  # Поля для сортировки
 
     def get_queryset(self):
         user = self.request.user
@@ -281,10 +291,26 @@ class CalculateMarketplacePriceView(GenericAPIView):
 
 
 class MarketplaceActionListView(ListAPIView):
-    """Все акции и товары в них."""
-    queryset = MarketplaceAction.objects.all()
+    """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
+    и отдаёт отсортированные данные по платформе.
+    """
     serializer_class = MarketplaceActionSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Получаем текущую дату
+        today = timezone.now().date()
+        # Фильтруем акции, которые еще не закончились
+        queryset = MarketplaceAction.objects.filter(date_finish__gt=today)
+        # Фильтрация по платформе, если параметр передан
+        platform_id = self.request.query_params.get('platform')
+        if platform_id:
+            queryset = queryset.filter(platform_id=platform_id)
+            # Сортировка по платформе
+            queryset = queryset.order_by('platform')
+
+        return queryset
+
 
 # class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):
 #     permission_classes = [IsAuthenticated]
