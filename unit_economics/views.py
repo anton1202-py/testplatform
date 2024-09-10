@@ -2,6 +2,7 @@ import logging
 
 import requests
 from django.db import transaction
+from django.utils import timezone
 from django.db.models import Count
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -287,10 +288,26 @@ class CalculateMarketplacePriceView(GenericAPIView):
 
 
 class MarketplaceActionListView(ListAPIView):
-    """Все акции и товары в них."""
-    queryset = MarketplaceAction.objects.all()
+    """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
+    и отдаёт отсортированные данные по платформе.
+    """
     serializer_class = MarketplaceActionSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Получаем текущую дату
+        today = timezone.now().date()
+        # Фильтруем акции, которые еще не закончились
+        queryset = MarketplaceAction.objects.filter(date_finish__gt=today)
+        # Фильтрация по платформе, если параметр передан
+        platform_id = self.request.query_params.get('platform')
+        if platform_id:
+            queryset = queryset.filter(platform_id=platform_id)
+            # Сортировка по платформе
+            queryset = queryset.order_by('platform')
+
+        return queryset
+
 
 # class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):
 #     permission_classes = [IsAuthenticated]
