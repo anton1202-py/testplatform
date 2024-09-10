@@ -5,7 +5,8 @@ from django.db import transaction
 
 from api_requests.moy_sklad import (get_assortiment_info, get_stock_info,
                                     moy_sklad_assortment, moy_sklad_enter,
-                                    moy_sklad_positions_enter)
+                                    moy_sklad_positions_enter,
+                                    picture_href_request)
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
 # from unit_economics.integrations import sender_error_to_tg

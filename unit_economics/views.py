@@ -25,7 +25,8 @@ from unit_economics.serializers import (
     AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
     ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer)
-from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
+from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
+                                            moy_sklad_costprice_calculate)
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
 from unit_economics.tasks_wb import (wb_categories_list,
