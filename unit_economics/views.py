@@ -4,7 +4,7 @@ import requests
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status, viewsets
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -166,11 +166,16 @@ class ProductNameViewSet(viewsets.ViewSet):
 
 
 class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
-    """Получаем товары для выбранной платформы + фильтрация по данным от пользователя"""
+    """Получаем товары для выбранной платформы + фильтрация по данным от пользователя
+       + поля для поиска 'name', 'barcode' пример запроса GET /api/marketplace-products/?search=123456789
+       + поля для сортировки 'profit', 'profitability' пример запроса GET /api/marketplace-products/?ordering=profit
+       (или -profit для сортировки по убыванию)
+    """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductSerializer
-    filter_backends = [SearchFilter]  # Подключаем поиск
+    filter_backends = [SearchFilter, OrderingFilter]  # Подключаем поиск и сортировку
     search_fields = ['name', 'barcode']  # Поля для поиска
+    ordering_fields = ['profit', 'profitability']  # Поля для сортировки
 
     def get_queryset(self):
         user = self.request.user
