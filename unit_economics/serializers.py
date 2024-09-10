@@ -46,12 +46,16 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
     logistic_cost = serializers.SerializerMethodField()
     overheads = serializers.FloatField(
         source='mp_profitability.overheads', read_only=True)
+    profit = serializers.FloatField(
+        source='mp_profitability.profit', read_only=True)
+    profitability = serializers.FloatField(
+        source='mp_profitability.profitability', read_only=True)
 
     class Meta:
         model = MarketplaceProduct
         fields = [
             'id', 'name', 'sku', 'seller_article', 'barcode',
-            'brand', 'cost_price', 'rrc', 'price', 'commission', 'logistic_cost', 'overheads'
+            'brand', 'cost_price', 'rrc', 'price', 'commission', 'logistic_cost', 'overheads', 'profit', 'profitability'
         ]
 
     def get_rrc(self, obj):
