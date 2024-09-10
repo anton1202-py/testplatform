@@ -4,7 +4,8 @@ from rest_framework.routers import DefaultRouter
 from unit_economics.views import (AccountViewSet, BrandViewSet,
                                   MarketplaceProductViewSet, PlatformViewSet,
                                   ProductMoySkladViewSet, ProductNameViewSet,
-                                  ProductPriceMSViewSet, ProfitabilityAPIView)
+                                  ProductPriceMSViewSet, ProfitabilityAPIView, UpdatePriceView,
+                                  CalculateMarketplacePriceView, MarketplaceActionListView)
 
 router = DefaultRouter()
 router.register(r'product-create-db-my-sklad',
@@ -21,4 +22,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('api/profitability/<int:user_id>/',
          ProfitabilityAPIView.as_view(), name='profitability-api'),
+    path('unit_economics/update-price/', UpdatePriceView.as_view(), name='update-price'),
+    path('calculate-marketplace-price/', CalculateMarketplacePriceView.as_view(), name='calculate-marketplace-price'),
+    path('marketplace-actions/', MarketplaceActionListView.as_view(), name='marketplace-actions-list'),
 ]

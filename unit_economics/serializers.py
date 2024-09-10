@@ -4,7 +4,7 @@ from core.models import Account, Platform
 from core.serializers import AccountsListSerializers
 from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
                                    ProductPrice,
-                                   ProfitabilityMarketplaceProduct)
+                                   ProfitabilityMarketplaceProduct, MarketplaceProductInAction, MarketplaceAction)
 
 
 class PlatformSerializer(serializers.ModelSerializer):
@@ -102,3 +102,20 @@ class ProfitabilityMarketplaceProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfitabilityMarketplaceProduct
         fields = ['mp_product', 'profit', 'profitability', 'overheads']
+
+
+class MarketplaceProductInActionSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='marketplace_product.name', read_only=True)
+
+    class Meta:
+        model = MarketplaceProductInAction
+        fields = ['marketplace_product', 'product_price', 'status', 'product_name']
+
+
+class MarketplaceActionSerializer(serializers.ModelSerializer):
+    products_in_action = MarketplaceProductInActionSerializer(many=True, source='action')
+
+    class Meta:
+        model = MarketplaceAction
+        fields = ['platform', 'account', 'action_number', 'action_name', 'date_start', 'date_finish', 'products_in_action']
+

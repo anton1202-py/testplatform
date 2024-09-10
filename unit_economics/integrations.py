@@ -311,7 +311,7 @@ def update_price_info_from_user_request(data_dict: dict):
         product_obj = mp_product_obj.product
         account_obj = Account.objects.get(id=account_id)
         moy_sklad_account = Account.objects.get(
-            user=User.objects.get(id-user_id),
+            user=User.objects.get(id=user_id),
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.MOY_SKLAD)
         )

@@ -4,7 +4,7 @@ import requests
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status, viewsets
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -14,19 +14,24 @@ from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
 from api_requests.moy_sklad import change_product_price
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
-from unit_economics.integrations import (calculate_mp_price_with_profitability,
-                                         profitability_calculate,
-                                         save_overheds_for_mp_product)
+from unit_economics.integrations import (profitability_calculate,
+                                         save_overheds_for_mp_product, update_price_info_from_user_request,
+                                         calculate_mp_price_with_profitability)
 from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
-                                   ProductPrice)
+                                   ProductPrice, MarketplaceAction)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
     AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
+<<<<<<< HEAD
     ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer)
 from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
                                             moy_sklad_costprice_calculate)
+=======
+    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer, MarketplaceActionSerializer)
+from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
+>>>>>>> 61a2df81a23e4d9424812a0870adeede680e260a
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
 from unit_economics.tasks_wb import (wb_categories_list,
@@ -236,6 +241,54 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdatePriceView(GenericAPIView):
+    """
+    Представление для обновления цен на товары и накладных расходов.
+    Обновляет цены на Мой склад и в БД, если пользователь отправил запрос
+    {
+        'user_id': user_id.
+        'account_id': account_id,
+        'platform_name': platform_name,
+        'products_data': [
+            {
+                'marketplaceproduct_id': marketplaceproduct_id,
+                'new_price': new_price,
+                'overhead': overhead
+            }
+        ]
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # Вызов вашей функции для обновления цен
+            update_price_info_from_user_request(request.data)
+            return Response({"detail": "Цены успешно обновлены"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CalculateMarketplacePriceView(GenericAPIView):
+    """
+    Вычисление цены на маркетплейсе на основе рентабельности
+    в body нужно прокинуть user_id пользователя.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.user.id
+        calculate_mp_price_with_profitability(user_id)
+        return Response({"detail": "Цены успешно обновлены."})
+
+
+class MarketplaceActionListView(ListAPIView):
+    """Все акции и товары в них."""
+    queryset = MarketplaceAction.objects.all()
+    serializer_class = MarketplaceActionSerializer
+    permission_classes = [IsAuthenticated]
 
 # class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):
 #     permission_classes = [IsAuthenticated]
