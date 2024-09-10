@@ -1,0 +1,41 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+        files: \.ya?ml$
+    -   id: check-added-large-files
+        args: ['--maxkb=2048']
+    -   id: mixed-line-ending
+-   repo: https://github.com/asottile/yesqa
+    rev: v1.4.0
+    hooks:
+    -   id: yesqa
+        exclude: (^docker|^config|^src|migrations)
+-   repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+    -   id: black
+        args: [apps, core, data_fabric_server, --config, ./project.toml, --skip-magic-trailing-comma]
+#-   repo: https://github.com/asottile/seed-isort-config
+#    rev: v2.2.0
+#    hooks:
+#    -   id: seed-isort-config
+#-   repo: https://github.com/PyCQA/isort
+#    rev: 5.10.1
+#    hooks:
+#    -   id: isort
+#        exclude: (^docker|^config|^src|migrations)
+-   repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
+    hooks:
+    -   id: flake8
+        exclude: (^docker|^config|^src|migrations)
+#-   repo: https://github.com/pre-commit/pygrep-hooks
+#    rev: v1.9.0
+#    hooks:
+#    -   id: python-no-eval
