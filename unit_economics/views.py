@@ -20,13 +20,14 @@ from unit_economics.integrations import (profitability_calculate,
                                          save_overheds_for_mp_product, update_price_info_from_user_request,
                                          calculate_mp_price_with_profitability)
 from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
-                                   ProductPrice, MarketplaceAction)
+                                   ProductPrice, MarketplaceAction, MarketplaceProductPriceWithProfitability)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
     AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
-    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer, MarketplaceActionSerializer)
+    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer, MarketplaceActionSerializer,
+    MarketplaceProductPriceWithProfitabilitySerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -169,14 +170,15 @@ class ProductNameViewSet(viewsets.ViewSet):
 class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
     """Получаем товары для выбранной платформы + фильтрация по данным от пользователя
        + поля для поиска 'name', 'barcode' пример запроса GET /api/marketplace-products/?search=123456789
-       + поля для сортировки 'profit', 'profitability' пример запроса GET /api/marketplace-products/?ordering=profit
+       + поля для сортировки 'profit', 'profitability' пример запроса
+       GET /api/marketplace-products/?ordering=mp_profitability__profit
        (или -profit для сортировки по убыванию)
     """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductSerializer
     filter_backends = [SearchFilter, OrderingFilter]  # Подключаем поиск и сортировку
     search_fields = ['name', 'barcode']  # Поля для поиска
-    ordering_fields = ['profit', 'profitability']  # Поля для сортировки
+    ordering_fields = ['mp_profitability__profit', 'mp_profitability__profitability']  # Поля для сортировки ['profit', 'profitability']
 
     def get_queryset(self):
         user = self.request.user
@@ -309,6 +311,23 @@ class MarketplaceActionListView(ListAPIView):
         return queryset
 
 
+class MarketplaceProductPriceWithProfitabilityViewSet(viewsets.ReadOnlyModelViewSet):
+    """    profit_price - это по Fifo
+           usual_price = простая рентабельность"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = MarketplaceProductPriceWithProfitabilitySerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['mp_product__product__brand']  # Поле для фильтрации по бренду
+
+    def get_queryset(self):
+        queryset = MarketplaceProductPriceWithProfitability.objects.all()
+
+        # Фильтрация по бренду, если передан параметр 'brand'
+        brand = self.request.query_params.get('brand')
+        if brand:
+            queryset = queryset.filter(mp_product__product__brand=brand)
+
+        return queryset
 
 
 # class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):

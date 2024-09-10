@@ -4,7 +4,8 @@ from core.models import Account, Platform
 from core.serializers import AccountsListSerializers
 from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
                                    ProductPrice,
-                                   ProfitabilityMarketplaceProduct, MarketplaceProductInAction, MarketplaceAction)
+                                   ProfitabilityMarketplaceProduct, MarketplaceProductInAction, MarketplaceAction,
+                                   MarketplaceProductPriceWithProfitability)
 
 
 class PlatformSerializer(serializers.ModelSerializer):
@@ -123,3 +124,16 @@ class MarketplaceActionSerializer(serializers.ModelSerializer):
         model = MarketplaceAction
         fields = ['platform', 'account', 'action_number', 'action_name', 'date_start', 'date_finish', 'products_in_action']
 
+
+class MarketplaceProductPriceWithProfitabilitySerializer(serializers.ModelSerializer):
+    # Получаем id связанной модели MarketplaceProduct
+    id = serializers.IntegerField(source='mp_product.id', read_only=True)
+    # Получаем бренд продукта через связь с MarketplaceProduct
+    brand = serializers.CharField(source='mp_product.product.brand', read_only=True)
+    # Поля для цены
+    profit_price = serializers.FloatField(read_only=True)
+    usual_price = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = MarketplaceProductPriceWithProfitability
+        fields = ['id', 'brand', 'profit_price', 'usual_price']
