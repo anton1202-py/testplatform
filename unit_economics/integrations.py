@@ -72,7 +72,7 @@ def add_marketplace_product_to_db(
                     height=height,
                     length=length,
                     weight=weight,
-                    ozon_sku=ozon_sku
+                    ozonsku=ozon_sku
                 )
                 objects_for_create.append(product_obj)
             else:
@@ -85,7 +85,7 @@ def add_marketplace_product_to_db(
                     height=height,
                     length=length,
                     weight=weight,
-                    ozon_sku=ozon_sku
+                    ozonsku=ozon_sku
                 )
         continue
     MarketplaceProduct.objects.bulk_create(objects_for_create)
