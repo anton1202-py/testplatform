@@ -3,12 +3,14 @@ import logging
 import requests
 from django.db import transaction
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Q
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
@@ -212,7 +214,7 @@ class ProfitabilityAPIView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        GET-запрос для расчета рентабельности всех товаров пользователя.
+        GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
         """
         user_id = self.kwargs.get('user_id')
 
@@ -221,6 +223,40 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response(result, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # @action(detail=False, methods=['get'])
+    # def products_by_category(self, request, user_id):
+    #     category = request.query_params.get('category')
+    #     if not category:
+    #         return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     user = User.objects.get(id=user_id)
+    #
+    #     # Определяем фильтр в зависимости от категории
+    #     filter_conditions = {
+    #         'above_20': Q(mp_profitability__profitability__gt=20),
+    #         'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
+    #         'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
+    #         'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(
+    #             mp_profitability__profitability__gt=-10),
+    #         'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(
+    #             mp_profitability__profitability__lt=-10),
+    #         'below_minus_20': Q(mp_profitability__profitability__lt=-20),
+    #     }
+    #
+    #     if category not in filter_conditions:
+    #         return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     products = MarketplaceProduct.objects.filter(
+    #         account__user=user
+    #     ).filter(
+    #         filter_conditions[category]
+    #     ).select_related(
+    #         'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
+    #     )
+    #
+    #     serializer = MarketplaceProductSerializer(products, many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         """
@@ -246,6 +282,41 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductsByCategoryAPIView(APIView):
+    def get(self, request, user_id):
+        category = request.query_params.get('category')
+        if not category:
+            return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        filter_conditions = {
+            'above_20': Q(mp_profitability__profitability__gt=20),
+            'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
+            'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
+            'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(mp_profitability__profitability__gt=-10),
+            'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(mp_profitability__profitability__lt=-10),
+            'below_minus_20': Q(mp_profitability__profitability__lt=-20),
+        }
+
+        if category not in filter_conditions:
+            return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
+
+        products = MarketplaceProduct.objects.filter(
+            account__user=user
+        ).filter(
+            filter_conditions[category]
+        ).select_related(
+            'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
+        )
+
+        serializer = MarketplaceProductSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdatePriceView(GenericAPIView):
@@ -291,7 +362,7 @@ class CalculateMarketplacePriceView(GenericAPIView):
 
 class MarketplaceActionListView(ListAPIView):
     """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
-    и отдаёт отсортированные данные по платформе.
+        + параметр название акции action_name и отдаёт отсортированные данные по платформе.
     """
     serializer_class = MarketplaceActionSerializer
     permission_classes = [IsAuthenticated]
@@ -305,8 +376,12 @@ class MarketplaceActionListView(ListAPIView):
         platform_id = self.request.query_params.get('platform')
         if platform_id:
             queryset = queryset.filter(platform_id=platform_id)
-            # Сортировка по платформе
-            queryset = queryset.order_by('platform')
+        # Фильтрация по названию акции, если параметр передан
+        action_name = self.request.query_params.get('action_name')
+        if action_name:
+            queryset = queryset.filter(action_name__icontains=action_name)
+        # Сортировка по платформе и названию акции
+        queryset = queryset.order_by('platform_id', 'action_name')
 
         return queryset
 
@@ -329,6 +404,14 @@ class MarketplaceProductPriceWithProfitabilityViewSet(viewsets.ReadOnlyModelView
 
         return queryset
 
+
+class UserIdView(APIView):
+    """Апишка, которая отдаёт фронту id юзера"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user_id = request.user.id
+        return Response({'user_id': user_id})
 
 # class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):
 #     permission_classes = [IsAuthenticated]
