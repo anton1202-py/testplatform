@@ -2,13 +2,15 @@ import logging
 
 import requests
 from django.db import transaction
-from django.db.models import Count
 from django.utils import timezone
+from django.db.models import Count, Q
 from rest_framework import status, viewsets
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
@@ -16,19 +18,18 @@ from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
 from api_requests.moy_sklad import change_product_price
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
-from unit_economics.integrations import (calculate_mp_price_with_profitability,
-                                         profitability_calculate,
-                                         save_overheds_for_mp_product,
-                                         update_price_info_from_user_request)
-from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
-                                   MarketplaceProduct, ProductPrice)
+from unit_economics.integrations import (profitability_calculate,
+                                         save_overheds_for_mp_product, update_price_info_from_user_request,
+                                         calculate_mp_price_with_profitability)
+from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
+                                   ProductPrice, MarketplaceAction, MarketplaceProductPriceWithProfitability)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
-    AccountSerializer, BrandSerializer, MarketplaceActionSerializer,
-    MarketplaceCommissionSerializer, MarketplaceProductSerializer,
-    PlatformSerializer, ProductNameSerializer, ProductPriceSerializer,
-    ProfitabilityMarketplaceProductSerializer)
+    AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
+    MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
+    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer, MarketplaceActionSerializer,
+    MarketplaceProductPriceWithProfitabilitySerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -106,12 +107,12 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # wb_comission_add_to_db()
         # ozon_products_data_to_db()
         # ozon_comission_logistic_add_data_to_db()
-        yandex_add_products_data_to_db()
-        yandex_comission_logistic_add_data_to_db()
+        # yandex_add_products_data_to_db()
+        # yandex_comission_logistic_add_data_to_db()
         # profitability_calculate(user_id=user.id)
-        # moy_sklad_costprice_add_to_db()
-        # calculate_mp_price_with_profitability(user.id)
-        # action_article_price_to_db()
+        moy_sklad_costprice_add_to_db()
+        calculate_mp_price_with_profitability(user.id)
+        action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -171,15 +172,15 @@ class ProductNameViewSet(viewsets.ViewSet):
 class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
     """Получаем товары для выбранной платформы + фильтрация по данным от пользователя
        + поля для поиска 'name', 'barcode' пример запроса GET /api/marketplace-products/?search=123456789
-       + поля для сортировки 'profit', 'profitability' пример запроса GET /api/marketplace-products/?ordering=profit
+       + поля для сортировки 'profit', 'profitability' пример запроса
+       GET /api/marketplace-products/?ordering=mp_profitability__profit
        (или -profit для сортировки по убыванию)
     """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductSerializer
-    # Подключаем поиск и сортировку
-    filter_backends = [SearchFilter, OrderingFilter]
+    filter_backends = [SearchFilter, OrderingFilter]  # Подключаем поиск и сортировку
     search_fields = ['name', 'barcode']  # Поля для поиска
-    ordering_fields = ['profit', 'profitability']  # Поля для сортировки
+    ordering_fields = ['mp_profitability__profit', 'mp_profitability__profitability']  # Поля для сортировки ['profit', 'profitability']
 
     def get_queryset(self):
         user = self.request.user
@@ -213,13 +214,18 @@ class ProfitabilityAPIView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        GET-запрос для расчета рентабельности всех товаров пользователя.
+        GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
         """
         user_id = self.kwargs.get('user_id')
+        category = request.query_params.get('category')
 
         try:
             result = profitability_calculate(user_id)
-            return Response(result, status=status.HTTP_200_OK)
+            if category:
+                products = result['products_by_profitability'].get(category, [])
+                return Response(products, status=status.HTTP_200_OK)
+            else:
+                return Response(result, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -247,6 +253,41 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductsByCategoryAPIView(APIView):
+    def get(self, request, user_id):
+        category = request.query_params.get('category')
+        if not category:
+            return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        filter_conditions = {
+            'above_20': Q(mp_profitability__profitability__gt=20),
+            'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
+            'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
+            'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(mp_profitability__profitability__gt=-10),
+            'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(mp_profitability__profitability__lt=-10),
+            'below_minus_20': Q(mp_profitability__profitability__lt=-20),
+        }
+
+        if category not in filter_conditions:
+            return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
+
+        products = MarketplaceProduct.objects.filter(
+            account__user=user
+        ).filter(
+            filter_conditions[category]
+        ).select_related(
+            'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
+        )
+
+        serializer = MarketplaceProductSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdatePriceView(GenericAPIView):
@@ -292,7 +333,7 @@ class CalculateMarketplacePriceView(GenericAPIView):
 
 class MarketplaceActionListView(ListAPIView):
     """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
-    и отдаёт отсортированные данные по платформе.
+        + параметр название акции action_name и отдаёт отсортированные данные по платформе.
     """
     serializer_class = MarketplaceActionSerializer
     permission_classes = [IsAuthenticated]
@@ -306,11 +347,42 @@ class MarketplaceActionListView(ListAPIView):
         platform_id = self.request.query_params.get('platform')
         if platform_id:
             queryset = queryset.filter(platform_id=platform_id)
-            # Сортировка по платформе
-            queryset = queryset.order_by('platform')
+        # Фильтрация по названию акции, если параметр передан
+        action_name = self.request.query_params.get('action_name')
+        if action_name:
+            queryset = queryset.filter(action_name__icontains=action_name)
+        # Сортировка по платформе и названию акции
+        queryset = queryset.order_by('platform_id', 'action_name')
 
         return queryset
 
+
+class MarketplaceProductPriceWithProfitabilityViewSet(viewsets.ReadOnlyModelViewSet):
+    """    profit_price - это по Fifo
+           usual_price = простая рентабельность"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = MarketplaceProductPriceWithProfitabilitySerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['mp_product__product__brand']  # Поле для фильтрации по бренду
+
+    def get_queryset(self):
+        queryset = MarketplaceProductPriceWithProfitability.objects.all()
+
+        # Фильтрация по бренду, если передан параметр 'brand'
+        brand = self.request.query_params.get('brand')
+        if brand:
+            queryset = queryset.filter(mp_product__product__brand=brand)
+
+        return queryset
+
+
+class UserIdView(APIView):
+    """Апишка, которая отдаёт фронту id юзера"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user_id = request.user.id
+        return Response({'user_id': user_id})
 
 # class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):
 #     permission_classes = [IsAuthenticated]
