@@ -37,6 +37,7 @@ def moy_sklad_assortment(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_li
         'Content-Type': 'application/json'
     }
     response = requests.get(api_url, headers=headers)
+    print(response.status_code)
     if response.status_code == 200:
         data = response.json()
         products = data.get('rows', [])
@@ -235,7 +236,6 @@ def get_picture_from_moy_sklad(token_moy_sklad, api_url):
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    print('api_url', api_url)
     response = requests.get(url=api_url, headers=headers)
 
     if response.status_code == 200:
