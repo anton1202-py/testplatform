@@ -77,6 +77,7 @@ def ozon_comission_logistic_add_data_to_db():
 
                         add_marketplace_logistic_to_db(
                             product_obj, cost_logistic_fbo=cost_logistic_fbo, cost_logistic_fbs=cost_logistic_fbs)
+                        print(f'Сохранил комиссию для {product_obj}')
                 except MarketplaceProduct.DoesNotExist:
                     logger.info(
                         f'В модели MarketplaceProduct (ОЗОН) нет sku {data["product_id"]}')
