@@ -2,11 +2,11 @@ import logging
 
 import requests
 from django.db import transaction
-from django.utils import timezone
 from django.db.models import Count, Q
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -18,18 +18,22 @@ from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
 from api_requests.moy_sklad import change_product_price
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
-from unit_economics.integrations import (profitability_calculate,
-                                         save_overheds_for_mp_product, update_price_info_from_user_request,
-                                         calculate_mp_price_with_profitability)
-from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
-                                   ProductPrice, MarketplaceAction, MarketplaceProductPriceWithProfitability)
+from unit_economics.integrations import (calculate_mp_price_with_profitability,
+                                         profitability_calculate,
+                                         save_overheds_for_mp_product,
+                                         update_price_info_from_user_request)
+from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
+                                   MarketplaceProduct,
+                                   MarketplaceProductPriceWithProfitability,
+                                   ProductPrice)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
-    AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
+    AccountSerializer, BrandSerializer, MarketplaceActionSerializer,
+    MarketplaceCommissionSerializer,
+    MarketplaceProductPriceWithProfitabilitySerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
-    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer, MarketplaceActionSerializer,
-    MarketplaceProductPriceWithProfitabilitySerializer)
+    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -108,8 +112,8 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # ozon_products_data_to_db()
         # ozon_comission_logistic_add_data_to_db()
         # yandex_add_products_data_to_db()
-        # yandex_comission_logistic_add_data_to_db()
-        # profitability_calculate(user_id=user.id)
+        yandex_comission_logistic_add_data_to_db()
+        profitability_calculate(user_id=user.id)
         moy_sklad_costprice_add_to_db()
         calculate_mp_price_with_profitability(user.id)
         action_article_price_to_db()
@@ -178,9 +182,12 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductSerializer
-    filter_backends = [SearchFilter, OrderingFilter]  # Подключаем поиск и сортировку
+    # Подключаем поиск и сортировку
+    filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['name', 'barcode']  # Поля для поиска
-    ordering_fields = ['mp_profitability__profit', 'mp_profitability__profitability']  # Поля для сортировки ['profit', 'profitability']
+    # Поля для сортировки ['profit', 'profitability']
+    ordering_fields = ['mp_profitability__profit',
+                       'mp_profitability__profitability']
 
     def get_queryset(self):
         user = self.request.user
@@ -222,7 +229,8 @@ class ProfitabilityAPIView(GenericAPIView):
         try:
             result = profitability_calculate(user_id)
             if category:
-                products = result['products_by_profitability'].get(category, [])
+                products = result['products_by_profitability'].get(
+                    category, [])
                 return Response(products, status=status.HTTP_200_OK)
             else:
                 return Response(result, status=status.HTTP_200_OK)
@@ -363,7 +371,8 @@ class MarketplaceProductPriceWithProfitabilityViewSet(viewsets.ReadOnlyModelView
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductPriceWithProfitabilitySerializer
     filter_backends = [SearchFilter]
-    search_fields = ['mp_product__product__brand']  # Поле для фильтрации по бренду
+    # Поле для фильтрации по бренду
+    search_fields = ['mp_product__product__brand']
 
     def get_queryset(self):
         queryset = MarketplaceProductPriceWithProfitability.objects.all()

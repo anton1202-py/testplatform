@@ -396,6 +396,7 @@ def changer_profitability_calculate(product):
     Входящие данные:
     product - объект модели MarketplaceProduct
     """
+    price = 0
     if product.platform.name == 'OZON':
         account = product.account
         price = ProductOzonPrice.objects.get(
@@ -407,7 +408,7 @@ def changer_profitability_calculate(product):
             product=product.product).wb_price
         comission = product.marketproduct_comission.fbs_commission
         logistic_cost = product.marketproduct_logistic.cost_logistic
-    elif product.platform.name == 'Яндекс Маркет':
+    elif product.platform.name == 'Yandex Market':
         price = ProductForMarketplacePrice.objects.get(
             product=product.product).yandex_price
         comission = product.marketproduct_comission.fbs_commission
@@ -416,7 +417,6 @@ def changer_profitability_calculate(product):
     if price > 0:
         search_params = {'mp_product': product}
         try:
-            print(f'пытаюсь достать profitability_product {product}')
             profitability_product = ProfitabilityMarketplaceProduct.objects.get(
                 **search_params)
             overheads = profitability_product.overheads
