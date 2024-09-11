@@ -75,25 +75,31 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         return None
 
     def get_commission(self, obj):
-        commission = obj.marketproduct_comission
-        if commission:
-            return {
-                'fbs_commission': commission.fbs_commission,
-                'fbo_commission': commission.fbo_commission,
-                'dbs_commission': commission.dbs_commission,
-                'fbs_express_commission': commission.fbs_express_commission
-            }
-        return {}
+        try:
+            commission = obj.marketproduct_comission
+            if commission:
+                return {
+                    'fbs_commission': commission.fbs_commission,
+                    'fbo_commission': commission.fbo_commission,
+                    'dbs_commission': commission.dbs_commission,
+                    'fbs_express_commission': commission.fbs_express_commission
+                }
+            return {}
+        except MarketplaceProduct.marketproduct_comission.RelatedObjectDoesNotExist:
+            return {}
 
     def get_logistic_cost(self, obj):
-        logistic = obj.marketproduct_logistic
-        if logistic:
-            return {
-                'cost_logistic': logistic.cost_logistic,
-                'cost_logistic_fbo': logistic.cost_logistic_fbo,
-                'cost_logistic_fbs': logistic.cost_logistic_fbs
-            }
-        return {}
+        try:
+            logistic = obj.marketproduct_logistic
+            if logistic:
+                return {
+                    'cost_logistic': logistic.cost_logistic,
+                    'cost_logistic_fbo': logistic.cost_logistic_fbo,
+                    'cost_logistic_fbs': logistic.cost_logistic_fbs
+                }
+            return {}
+        except MarketplaceProduct.marketproduct_logistic.RelatedObjectDoesNotExist:
+            return {}
 
 
 class MarketplaceCommissionSerializer(serializers.ModelSerializer):
