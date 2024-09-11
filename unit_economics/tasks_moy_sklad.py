@@ -107,7 +107,7 @@ def moy_sklad_add_data_to_db():
                                 total_cost_price = None
                                 break  # Прекращаем суммирование, если есть ошибка
 
-                        cost_price = total_cost_price
+                        cost_price = total_cost_price / 100
 
                     else:
                         message = f'Ошибка при вызове метода (компоненты): {response.status_code}. {response.text}'
@@ -134,13 +134,12 @@ def moy_sklad_add_data_to_db():
             # Массовая вставка или обновление данных
             with transaction.atomic():
                 for product_info in product_data:
-                    search_params = {'account': product_info['account'], 'name': product_info['name'],
-                                     'vendor': product_info['vendor'], 'brand': product_info['brand']}
+                    search_params = {'account': product_info['account'], "barcode": product_info['barcode'], "moy_sklad_product_number": product_info['moy_sklad_product_number'],
+                                     }
                     values_for_update = {
-                        "barcode": product_info['barcode'],
                         "product_type": product_info['product_type'],
                         "cost_price": product_info['cost_price'],
-                        "moy_sklad_product_number": product_info['moy_sklad_product_number']
+                        'brand': product_info['brand']
                     }
                     product_obj_сort = ProductPrice.objects.update_or_create(
                         defaults=values_for_update,

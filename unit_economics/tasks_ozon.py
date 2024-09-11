@@ -12,7 +12,7 @@ from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
                                          add_marketplace_product_to_db)
 from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
-                                   MarketplaceProductInAction)
+                                   MarketplaceProductInAction, ProductPrice)
 
 #  sender_error_to_tg)
 
@@ -40,13 +40,12 @@ def ozon_comission_logistic_add_data_to_db():
 
     users = User.objects.all()
     for user in users:
-
-        accounts_wb = Account.objects.filter(
+        accounts_oz = Account.objects.filter(
             user=user,
             platform=Platform.objects.get(
                 platform_type=MarketplaceChoices.OZON)
         )
-        for account in accounts_wb:
+        for account in accounts_oz:
             ozon_token = account.authorization_fields['token']
             ozon_client_id = account.authorization_fields['client_id']
             data_list = ozon_products_comission_info_from_api(
@@ -54,26 +53,31 @@ def ozon_comission_logistic_add_data_to_db():
 
             for data in data_list:
                 try:
-                    product_obj = MarketplaceProduct.objects.get(
-                        account=account,
-                        platform=Platform.objects.get(
-                            platform_type=MarketplaceChoices.OZON),
-                        sku=data['product_id'])
-                    comissions_data = data['commissions']
+                    if MarketplaceProduct.objects.filter(
+                            account=account,
+                            platform=Platform.objects.get(
+                                platform_type=MarketplaceChoices.OZON),
+                            sku=data['product_id']).exists():
+                        product_obj = MarketplaceProduct.objects.filter(
+                            account=account,
+                            platform=Platform.objects.get(
+                                platform_type=MarketplaceChoices.OZON),
+                            sku=data['product_id'])[0]
+                        comissions_data = data['commissions']
+                        fbs_commission = comissions_data['sales_percent_fbs']
+                        fbo_commission = comissions_data['sales_percent_fbo']
+                        add_marketplace_comission_to_db(product_obj, fbs_commission,
+                                                        fbo_commission)
 
-                    fbs_commission = comissions_data['sales_percent_fbs']
-                    fbo_commission = comissions_data['sales_percent_fbo']
-                    add_marketplace_comission_to_db(product_obj, fbs_commission,
-                                                    fbo_commission)
+                        cost_logistic_fbo = comissions_data['fbo_deliv_to_customer_amount'] + \
+                            comissions_data['fbo_fulfillment_amount'] + \
+                            comissions_data['fbo_direct_flow_trans_max_amount']
+                        cost_logistic_fbs = comissions_data['fbs_deliv_to_customer_amount'] + \
+                            comissions_data['fbs_direct_flow_trans_max_amount']
 
-                    cost_logistic_fbo = comissions_data['fbo_deliv_to_customer_amount'] + \
-                        comissions_data['fbo_fulfillment_amount'] + \
-                        comissions_data['fbo_direct_flow_trans_max_amount']
-                    cost_logistic_fbs = comissions_data['fbs_deliv_to_customer_amount'] + \
-                        comissions_data['fbs_direct_flow_trans_max_amount']
-
-                    add_marketplace_logistic_to_db(
-                        product_obj, cost_logistic_fbo=cost_logistic_fbo, cost_logistic_fbs=cost_logistic_fbs)
+                        add_marketplace_logistic_to_db(
+                            product_obj, cost_logistic_fbo=cost_logistic_fbo, cost_logistic_fbs=cost_logistic_fbs)
+                        print(f'Сохранил комиссию для {product_obj}')
                 except MarketplaceProduct.DoesNotExist:
                     logger.info(
                         f'В модели MarketplaceProduct (ОЗОН) нет sku {data["product_id"]}')
