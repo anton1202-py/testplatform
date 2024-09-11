@@ -217,46 +217,17 @@ class ProfitabilityAPIView(GenericAPIView):
         GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
         """
         user_id = self.kwargs.get('user_id')
+        category = request.query_params.get('category')
 
         try:
             result = profitability_calculate(user_id)
-            return Response(result, status=status.HTTP_200_OK)
+            if category:
+                products = result['products_by_profitability'].get(category, [])
+                return Response(products, status=status.HTTP_200_OK)
+            else:
+                return Response(result, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    # @action(detail=False, methods=['get'])
-    # def products_by_category(self, request, user_id):
-    #     category = request.query_params.get('category')
-    #     if not category:
-    #         return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
-    #
-    #     user = User.objects.get(id=user_id)
-    #
-    #     # Определяем фильтр в зависимости от категории
-    #     filter_conditions = {
-    #         'above_20': Q(mp_profitability__profitability__gt=20),
-    #         'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
-    #         'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
-    #         'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(
-    #             mp_profitability__profitability__gt=-10),
-    #         'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(
-    #             mp_profitability__profitability__lt=-10),
-    #         'below_minus_20': Q(mp_profitability__profitability__lt=-20),
-    #     }
-    #
-    #     if category not in filter_conditions:
-    #         return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
-    #
-    #     products = MarketplaceProduct.objects.filter(
-    #         account__user=user
-    #     ).filter(
-    #         filter_conditions[category]
-    #     ).select_related(
-    #         'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
-    #     )
-    #
-    #     serializer = MarketplaceProductSerializer(products, many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         """
