@@ -7,7 +7,7 @@ from unit_economics.views import (AccountViewSet, BrandViewSet,
                                   ProductPriceMSViewSet, ProfitabilityAPIView, UpdatePriceView,
                                   CalculateMarketplacePriceView, MarketplaceActionListView,
                                   MarketplaceProductPriceWithProfitabilityViewSet, UserIdView,
-                                  ProductsByCategoryAPIView)
+                                  )# ProductsByCategoryAPIView)
 
 router = DefaultRouter()
 router.register(r'product-create-db-my-sklad',
@@ -25,8 +25,8 @@ urlpatterns = [
     path('', include(router.urls)),
     path('profitabilitys/<int:user_id>/',
          ProfitabilityAPIView.as_view(), name='profitability-api'),
-    path('profitability/<int:user_id>/products_by_category/', ProductsByCategoryAPIView.as_view(),
-         name='products_by_category'),
+    # path('profitability/<int:user_id>/products_by_category/', ProductsByCategoryAPIView.as_view(),
+    #      name='products_by_category'),
     path('unit_economics/update-price/', UpdatePriceView.as_view(), name='update-price'),
     path('calculate-marketplace-price/', CalculateMarketplacePriceView.as_view(), name='calculate-marketplace-price'),
     path('marketplace-actions/', MarketplaceActionListView.as_view(), name='marketplace-actions-list'),

@@ -214,6 +214,22 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        profitability_group = request.query_params.get('profitability_group')
+        if profitability_group:
+            result = profitability_calculate(request.user.id, profitability_group=profitability_group)
+            queryset = queryset.filter(id__in=[p.id for p in result['filtered_products']])
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
 
 class ProfitabilityAPIView(GenericAPIView):
     """
@@ -223,19 +239,13 @@ class ProfitabilityAPIView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
+        GET-запрос для расчета рентабельности всех товаров пользователя.
         """
         user_id = self.kwargs.get('user_id')
-        category = request.query_params.get('category')
 
         try:
             result = profitability_calculate(user_id)
-            if category:
-                products = result['products_by_profitability'].get(
-                    category, [])
-                return Response(products, status=status.HTTP_200_OK)
-            else:
-                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -265,39 +275,90 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProductsByCategoryAPIView(APIView):
-    def get(self, request, user_id):
-        category = request.query_params.get('category')
-        if not category:
-            return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+# class ProfitabilityAPIView(GenericAPIView):
+#     """
+#     API для расчета рентабельности и сохранения накладных расходов.
+#     """
+#     serializer_class = ProfitabilityMarketplaceProductSerializer
+#
+#     def get(self, request, *args, **kwargs):
+#         """
+#         GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
+#         """
+#         user_id = self.kwargs.get('user_id')
+#         category = request.query_params.get('category')
+#
+#         try:
+#             result = profitability_calculate(user_id)
+#             if category:
+#                 products = result['products_by_profitability'].get(
+#                     category, [])
+#                 return Response(products, status=status.HTTP_200_OK)
+#             else:
+#                 return Response(result, status=status.HTTP_200_OK)
+#         except User.DoesNotExist:
+#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+#
+#     def post(self, request, *args, **kwargs):
+#         """
+#         POST-запрос для обновления накладных расходов и пересчета рентабельности.
+#         Входящие данные:
+#         mp_product_dict: словарь типа {mp_product_id: product_overheads}
+#         mp_product_id - id продлукта из таблицы MarketplaceProduct
+#         product_overheads - накладные расходы в формате float (например 0.2)
+#         """
+#         overheads_data = request.data.get('overheads_data', {})
+#         user_id = request.data.get('user_id')
+#
+#         if not overheads_data or not user_id:
+#             return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         try:
+#             # Сохраняем накладные расходы
+#             save_overheds_for_mp_product(overheads_data)
+#
+#             # Пересчитываем рентабельность
+#             result = profitability_calculate(user_id)
+#
+#             return Response(result, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        filter_conditions = {
-            'above_20': Q(mp_profitability__profitability__gt=20),
-            'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
-            'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
-            'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(mp_profitability__profitability__gt=-10),
-            'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(mp_profitability__profitability__lt=-10),
-            'below_minus_20': Q(mp_profitability__profitability__lt=-20),
-        }
 
-        if category not in filter_conditions:
-            return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
-
-        products = MarketplaceProduct.objects.filter(
-            account__user=user
-        ).filter(
-            filter_conditions[category]
-        ).select_related(
-            'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
-        )
-
-        serializer = MarketplaceProductSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+# class ProductsByCategoryAPIView(APIView):
+#     def get(self, request, user_id):
+#         category = request.query_params.get('category')
+#         if not category:
+#             return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         try:
+#             user = User.objects.get(id=user_id)
+#         except User.DoesNotExist:
+#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+#
+#         filter_conditions = {
+#             'above_20': Q(mp_profitability__profitability__gt=20),
+#             'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
+#             'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
+#             'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(mp_profitability__profitability__gt=-10),
+#             'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(mp_profitability__profitability__lt=-10),
+#             'below_minus_20': Q(mp_profitability__profitability__lt=-20),
+#         }
+#
+#         if category not in filter_conditions:
+#             return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         products = MarketplaceProduct.objects.filter(
+#             account__user=user
+#         ).filter(
+#             filter_conditions[category]
+#         ).select_related(
+#             'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
+#         )
+#
+#         serializer = MarketplaceProductSerializer(products, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdatePriceView(GenericAPIView):

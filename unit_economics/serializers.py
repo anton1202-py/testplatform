@@ -51,7 +51,7 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         source='mp_profitability.profit', read_only=True)
     profitability = serializers.FloatField(
         source='mp_profitability.profitability', read_only=True)
-    image = serializers.SlugRelatedField(source='product', slug_field='image', read_only=True)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = MarketplaceProduct
@@ -101,7 +101,10 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
             return {}
         except MarketplaceProduct.marketproduct_logistic.RelatedObjectDoesNotExist:
             return {}
-
+    def get_image(self, obj):
+        if obj.product.image:
+            return obj.product.image.url
+        return None
 
 class MarketplaceCommissionSerializer(serializers.ModelSerializer):
     class Meta:
