@@ -206,9 +206,11 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if account_id:
             queryset = queryset.filter(account_id=account_id)
         if brand:
-            queryset = queryset.filter(product__brand=brand)
+            brands = brand.split(',')
+            queryset = queryset.filter(product__brand__in=brands)
         if product_name:
-            queryset = queryset.filter(product__name__icontains=product_name)
+            products_names = product_name.split(',')
+            queryset = queryset.filter(name__in=products_names)
 
         return queryset
 
