@@ -532,6 +532,9 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
         incoming_profitability - входящая рентабельность с которой сравниваем рентабельность из БД
         product_list - список товаров, которые находятся на странице
 
+    Возвращает: 
+        mp_products_list - список объектов модели MarketplaceProduct
+
     """
     products_to_update = []
     products_to_create = []
@@ -592,6 +595,11 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
     if products_to_create:
         MarketplaceProductPriceWithProfitability.objects.bulk_create(
             products_to_create)
+    mp_products_list = []
+    for mp_product_id in product_list:
+        mp_products_obj = MarketplaceProduct.objects.get(id=mp_product_id)
+        mp_products_list.append(mp_products_obj)
+    return mp_products_list
 
 
 def update_price_info_from_user_request(data_dict: dict):
