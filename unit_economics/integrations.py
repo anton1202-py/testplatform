@@ -472,51 +472,52 @@ def calculate_mp_price_with_profitability(user_id):
         if len(x) == 0:
             print('нет комиссии', prod)
     for product in mp_products_list:
-        if product.platform.name == 'OZON':
-            comission = product.marketproduct_comission.fbs_commission
-            logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
-        else:
-            comission = product.marketproduct_comission.fbs_commission
-            logistic_cost = product.marketproduct_logistic.cost_logistic
-        if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
-            overheads = product.mp_profitability.overheads
-            profitability = product.mp_profitability.profitability
-            common_product_cost_price = product.product.cost_price/100
-            if ProductCostPrice.objects.filter(
-                    product=product.product).exists():
-                profit_product_cost_price = ProductCostPrice.objects.get(
-                    product=product.product).cost_price
+        if MarketplaceCommission.objects.filter(marketplace_product=prod).exists():
+            if product.platform.name == 'OZON':
+                comission = product.marketproduct_comission.fbs_commission
+                logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
             else:
-                profit_product_cost_price = 0
+                comission = product.marketproduct_comission.fbs_commission
+                logistic_cost = product.marketproduct_logistic.cost_logistic
+            if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
+                overheads = product.mp_profitability.overheads
+                profitability = product.mp_profitability.profitability
+                common_product_cost_price = product.product.cost_price/100
+                if ProductCostPrice.objects.filter(
+                        product=product.product).exists():
+                    profit_product_cost_price = ProductCostPrice.objects.get(
+                        product=product.product).cost_price
+                else:
+                    profit_product_cost_price = 0
 
-            # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
-            common_price = round(((common_product_cost_price/100 + comission + logistic_cost +
-                                   common_product_cost_price/100) / (1 - profitability/100 - overheads)), 2)
+                # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
+                common_price = round(((common_product_cost_price/100 + comission + logistic_cost +
+                                       common_product_cost_price/100) / (1 - profitability/100 - overheads)), 2)
 
-            # Цена на основе себестоимости по оприходованию
-            enter_price = round(((profit_product_cost_price + comission + logistic_cost +
-                                  profit_product_cost_price) / (1 - profitability/100 - overheads)), 2)
-            search_params = {'mp_product': product}
-            try:
-                mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
-                    **search_params)
+                # Цена на основе себестоимости по оприходованию
+                enter_price = round(((profit_product_cost_price + comission + logistic_cost +
+                                      profit_product_cost_price) / (1 - profitability/100 - overheads)), 2)
+                search_params = {'mp_product': product}
+                try:
+                    mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
+                        **search_params)
 
-            except MarketplaceProductPriceWithProfitability.DoesNotExist:
-                pass
+                except MarketplaceProductPriceWithProfitability.DoesNotExist:
+                    pass
 
-            values_for_update = {
-                "profit_price": enter_price,
-                "usual_price": common_price
-            }
-            if 'mp_product_price' in locals():
-                # Обновляем существующий объект
-                mp_product_price.profit_price = enter_price
-                mp_product_price.usual_price = common_price
-                products_to_update.append(mp_product_price)
-            else:
-                # Создаем новый объект
-                products_to_create.append(MarketplaceProductPriceWithProfitability(
-                    mp_product=product, **values_for_update))
+                values_for_update = {
+                    "profit_price": enter_price,
+                    "usual_price": common_price
+                }
+                if 'mp_product_price' in locals():
+                    # Обновляем существующий объект
+                    mp_product_price.profit_price = enter_price
+                    mp_product_price.usual_price = common_price
+                    products_to_update.append(mp_product_price)
+                else:
+                    # Создаем новый объект
+                    products_to_create.append(MarketplaceProductPriceWithProfitability(
+                        mp_product=product, **values_for_update))
     if products_to_update:
         MarketplaceProductPriceWithProfitability.objects.bulk_update(
             products_to_update, ['profit_price', 'usual_price'])
