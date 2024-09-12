@@ -19,11 +19,11 @@ def profitability_logistic_update(sender, instance, created, **kwargs):
     Пересчет рентабельности при изменении стоимости логистики
     """
     product = instance.marketplace_product
-    # try:
-    changer_profitability_calculate(product)
-    # except Exception as e:
-    #     message = f'Не удалось обновить рентабельность для продукта: {product}. Ошибка: {e}'
-    #     print(message)
+    try:
+        changer_profitability_calculate(product)
+    except Exception as e:
+        message = f'Не удалось обновить рентабельность для продукта: {product}. Ошибка: {e}'
+        print(message)
 
 
 @receiver(post_save, sender=MarketplaceCommission)
@@ -32,11 +32,8 @@ def profitability_comission_update(sender, instance, created, **kwargs):
     Пересчет рентабельности при изменении стоимости комиссии
     """
     product = instance.marketplace_product
-    print('В сигнале комиссии', {product})
     try:
-        print('Вызываю функцию сохранения', {product})
         changer_profitability_calculate(product)
-        print('Прошел функцию сохранения', {product})
     except Exception as e:
         message = f'Не удалось обновить рентабельность для продукта: {product}. Ошибка: {e}'
         print(message)

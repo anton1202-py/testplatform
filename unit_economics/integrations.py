@@ -1,8 +1,11 @@
+import asyncio
 import logging
 import traceback
+from functools import wraps
 
 import requests
-# import telegram
+import telegram
+from asgiref.sync import sync_to_async
 from django.db.models import Count, Q
 
 from analyticalplatform.settings import ADMINS_CHATID_LIST, TELEGRAM_TOKEN
@@ -20,13 +23,13 @@ from unit_economics.models import (MarketplaceAction, MarketplaceCategory,
 from unit_economics.serializers import MarketplaceProductSerializer
 
 logger = logging.getLogger(__name__)
-# bot = telegram.Bot(token=TELEGRAM_TOKEN)
+bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
 
 # def sender_error_to_tg(func):
-#     def wrapper(*args, **kwargs):
+#     async def async_wrapper(*args, **kwargs):
 #         try:
-#             return func(*args, **kwargs)
+#             return await func(*args, **kwargs)
 #         except Exception as e:
 #             tb_str = traceback.format_exc()
 #             message_error = (f'Ошибка в функции: {func.__name__}\n'
@@ -34,9 +37,17 @@ logger = logging.getLogger(__name__)
 #                              f'Ошибка\n: {e}\n\n'
 #                              f'Техническая информация:\n {tb_str}')
 #             for chat_id in ADMINS_CHATID_LIST:
-#                 bot.send_message(chat_id=chat_id, text=message_error[:4000])
+#                 await bot.send_message(chat_id=chat_id, text=message_error[:4000])
 
-#     return wrapper
+#     def sync_wrapper(*args, **kwargs):
+#         # Запускаем асинхронную функцию через asyncio.run
+#         return asyncio.run(async_wrapper(*args, **kwargs))
+
+#     # Проверяем, является ли функция асинхронной
+#     if asyncio.iscoroutinefunction(func):
+#         return async_wrapper
+#     else:
+#         return sync_wrapper
 
 
 # @sender_error_to_tg
@@ -223,18 +234,24 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None):
                 account = product.account
                 price = ProductOzonPrice.objects.get(
                     account=account, product=product.product).ozon_price
-                comission = product.marketproduct_comission.fbs_commission if hasattr(product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic_fbs if hasattr(product, 'marketproduct_logistic') else 0
+                comission = product.marketproduct_comission.fbs_commission if hasattr(
+                    product, 'marketproduct_comission') else 0
+                logistic_cost = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
+                    product, 'marketproduct_logistic') else 0
             elif product.platform.name == 'Wildberries':
                 price = ProductForMarketplacePrice.objects.get(
                     product=product.product).wb_price
-                comission = product.marketproduct_comission.fbs_commission if hasattr(product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(product, 'marketproduct_logistic') else 0
+                comission = product.marketproduct_comission.fbs_commission if hasattr(
+                    product, 'marketproduct_comission') else 0
+                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
+                    product, 'marketproduct_logistic') else 0
             elif product.platform.name == 'Яндекс Маркет':
                 price = ProductForMarketplacePrice.objects.get(
                     product=product.product).yandex_price
-                comission = product.marketproduct_comission.fbs_commission if hasattr(product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(product, 'marketproduct_logistic') else 0
+                comission = product.marketproduct_comission.fbs_commission if hasattr(
+                    product, 'marketproduct_comission') else 0
+                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
+                    product, 'marketproduct_logistic') else 0
             else:
                 continue  # Пропускаем неизвестные платформы
 
@@ -293,10 +310,14 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None):
 
     result = ProfitabilityMarketplaceProduct.objects.aggregate(
         count_above_20=Count('id', filter=Q(profitability__gt=20)),
-        count_between_10_and_20=Count('id', filter=Q(profitability__lte=20) & Q(profitability__gt=10)),
-        count_between_0_and_10=Count('id', filter=Q(profitability__lte=10) & Q(profitability__gt=0)),
-        count_between_0_and_minus_10=Count('id', filter=Q(profitability__lte=0) & Q(profitability__gt=-10)),
-        count_between_minus10_and_minus_20=Count('id', filter=Q(profitability__lte=-10) & Q(profitability__gt=-20)),
+        count_between_10_and_20=Count('id', filter=Q(
+            profitability__lte=20) & Q(profitability__gt=10)),
+        count_between_0_and_10=Count('id', filter=Q(
+            profitability__lte=10) & Q(profitability__gt=0)),
+        count_between_0_and_minus_10=Count('id', filter=Q(
+            profitability__lte=0) & Q(profitability__gt=-10)),
+        count_between_minus10_and_minus_20=Count('id', filter=Q(
+            profitability__lte=-10) & Q(profitability__gt=-20)),
         count_below_minus_20=Count('id', filter=Q(profitability__lte=-20)),
     )
 
@@ -496,6 +517,78 @@ def calculate_mp_price_with_profitability(user_id):
         MarketplaceProductPriceWithProfitability.objects.bulk_update(
             products_to_update, ['profit_price', 'usual_price'])
 
+    if products_to_create:
+        MarketplaceProductPriceWithProfitability.objects.bulk_create(
+            products_to_create)
+
+
+def calculate_mp_price_with_incoming_profitability(incoming_profitability: float, product_list: list):
+    """
+    Расчет цены товара на маркетплейсе на основе рентабельности.
+    Если рентабельность товара в базе данных меньше, чем входящая рентабельность,
+    то цена пересчитвается, если больше или равно, то не изменяется
+
+    Входящие данные:
+        incoming_profitability - входящая рентабельность с которой сравниваем рентабельность из БД
+        product_list - список товаров, которые находятся на странице
+
+    """
+    products_to_update = []
+    products_to_create = []
+    for mp_product_id in product_list:
+        mp_products_list = MarketplaceProduct.objects.filter(id=mp_product_id).select_related(
+            'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
+
+        for product in mp_products_list:
+            if product.platform.name == 'OZON':
+                comission = product.marketproduct_comission.fbs_commission
+                logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
+            else:
+                comission = product.marketproduct_comission.fbs_commission
+                logistic_cost = product.marketproduct_logistic.cost_logistic
+            if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
+                overheads = product.mp_profitability.overheads
+                profitability = product.mp_profitability.profitability
+                common_product_cost_price = product.product.cost_price/100
+                if ProductCostPrice.objects.filter(
+                        product=product.product).exists():
+                    profit_product_cost_price = ProductCostPrice.objects.get(
+                        product=product.product).cost_price
+                else:
+                    profit_product_cost_price = 0
+                if profitability < incoming_profitability:
+                    profitability = incoming_profitability
+                # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
+                    common_price = round(((common_product_cost_price/100 + comission + logistic_cost +
+                                           common_product_cost_price/100) / (1 - profitability/100 - overheads)), 2)
+
+                    # Цена на основе себестоимости по оприходованию
+                    enter_price = round(((profit_product_cost_price + comission + logistic_cost +
+                                          profit_product_cost_price) / (1 - profitability/100 - overheads)), 2)
+                    search_params = {'mp_product': product}
+                    try:
+                        mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
+                            **search_params)
+
+                    except MarketplaceProductPriceWithProfitability.DoesNotExist:
+                        pass
+
+                    values_for_update = {
+                        "profit_price": enter_price,
+                        "usual_price": common_price
+                    }
+                    if 'mp_product_price' in locals():
+                        # Обновляем существующий объект
+                        mp_product_price.profit_price = enter_price
+                        mp_product_price.usual_price = common_price
+                        products_to_update.append(mp_product_price)
+                    else:
+                        # Создаем новый объект
+                        products_to_create.append(MarketplaceProductPriceWithProfitability(
+                            mp_product=product, **values_for_update))
+    if products_to_update:
+        MarketplaceProductPriceWithProfitability.objects.bulk_update(
+            products_to_update, ['profit_price', 'usual_price'])
     if products_to_create:
         MarketplaceProductPriceWithProfitability.objects.bulk_create(
             products_to_create)

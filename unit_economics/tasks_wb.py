@@ -10,8 +10,10 @@ from core.models import Account, Platform, User
 from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
                                          add_marketplace_product_to_db)
-from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
-                                   MarketplaceProductInAction)
+from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
+                                   MarketplaceProduct,
+                                   MarketplaceProductInAction,
+                                   ProductForMarketplacePrice, ProductPrice)
 
 #  sender_error_to_tg)
 
@@ -44,19 +46,35 @@ def wb_comission_add_to_db():
     for account in accounts_wb:
         token_wb = account.authorization_fields['token']
         data_list = wb_comissions(token_wb)
+
+        wb_comission_dict = {}
         if data_list:
+            for data in data_list:
+                wb_comission_dict[data['subjectID']] = {
+                    'fbs_commission': data['kgvpMarketplace'],
+                    'fbo_commission': data['paidStorageKgvp'],
+                    'dbs_commission': data['kgvpSupplier'],
+                    'fbs_express_commission': data['kgvpSupplierExpress']
+                }
             goods_list = MarketplaceProduct.objects.filter(
                 account=account, platform=Platform.objects.get(platform_type=MarketplaceChoices.WILDBERRIES))
-            for data in data_list:
-                for good_data in goods_list:
-                    if good_data.category.category_number == data['subjectID']:
-                        add_marketplace_comission_to_db(
-                            good_data,
-                            data['kgvpMarketplace'],
-                            data['paidStorageKgvp'],
-                            data['kgvpSupplier'],
-                            data['kgvpSupplierExpress']
-                        )
+
+            for good_data in goods_list:
+                product_obj = ProductPrice.objects.filter(
+                    id=good_data.product.id).select_related('price_product')
+                wb_price = product_obj[0].price_product.wb_price
+                fbs_commission = wb_comission_dict[good_data.category.category_number]['fbs_commission'] * wb_price / 100
+                fbo_commission = wb_comission_dict[good_data.category.category_number]['fbo_commission'] * wb_price / 100
+                dbs_commission = wb_comission_dict[good_data.category.category_number]['dbs_commission'] * wb_price / 100
+                fbs_express_commission = wb_comission_dict[
+                    good_data.category.category_number]['fbs_express_commission'] * wb_price / 100
+                add_marketplace_comission_to_db(
+                    good_data,
+                    fbs_commission,
+                    fbo_commission,
+                    dbs_commission,
+                    fbs_express_commission
+                )
 
 
 # @sender_error_to_tg

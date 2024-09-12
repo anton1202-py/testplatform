@@ -108,15 +108,15 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
         # wb_logistic_add_to_db()
-        # wb_comission_add_to_db()
+        wb_comission_add_to_db()
         # ozon_products_data_to_db()
         # ozon_comission_logistic_add_data_to_db()
         # yandex_add_products_data_to_db()
-        yandex_comission_logistic_add_data_to_db()
-        profitability_calculate(user_id=user.id)
-        moy_sklad_costprice_add_to_db()
-        calculate_mp_price_with_profitability(user.id)
-        action_article_price_to_db()
+        # yandex_comission_logistic_add_data_to_db()
+        # profitability_calculate(user_id=user.id)
+        # moy_sklad_costprice_add_to_db()
+        # calculate_mp_price_with_profitability(user.id)
+        # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -219,8 +219,10 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         profitability_group = request.query_params.get('profitability_group')
         if profitability_group:
-            result = profitability_calculate(request.user.id, profitability_group=profitability_group)
-            queryset = queryset.filter(id__in=[p.id for p in result['filtered_products']])
+            result = profitability_calculate(
+                request.user.id, profitability_group=profitability_group)
+            queryset = queryset.filter(
+                id__in=[p.id for p in result['filtered_products']])
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -273,7 +275,6 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 # class ProfitabilityAPIView(GenericAPIView):
