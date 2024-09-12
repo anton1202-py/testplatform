@@ -104,6 +104,7 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
             account.authorization_fields['token'] = TOKEN_MY_SKLAD
             account.save()
         total_processed = 0  # Счетчик обработанных записей
+
         # change_product_price(TOKEN_MY_SKLAD)
         # moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
