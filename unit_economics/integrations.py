@@ -254,17 +254,17 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None):
 
                 # Добавляем фильтрацию по группе рентабельности
                 if profitability_group:
-                    if profitability_group == 'above_20' and profitability > 20:
+                    if profitability_group == 'count_above_20' and profitability > 20:
                         filtered_products.append(product)
-                    elif profitability_group == 'between_10_and_20' and 10 < profitability <= 20:
+                    elif profitability_group == 'count_between_10_and_20' and 10 < profitability <= 20:
                         filtered_products.append(product)
-                    elif profitability_group == 'between_0_and_10' and 0 < profitability <= 10:
+                    elif profitability_group == 'count_between_0_and_10' and 0 < profitability <= 10:
                         filtered_products.append(product)
-                    elif profitability_group == 'between_0_and_minus_10' and -10 < profitability <= 0:
+                    elif profitability_group == 'count_between_0_and_minus_10' and -10 < profitability <= 0:
                         filtered_products.append(product)
-                    elif profitability_group == 'between_minus10_and_minus_20' and -20 < profitability <= -10:
+                    elif profitability_group == 'count_between_minus10_and_minus_20' and -20 < profitability <= -10:
                         filtered_products.append(product)
-                    elif profitability_group == 'below_minus_20' and profitability <= -20:
+                    elif profitability_group == 'count_below_minus_20' and profitability <= -20:
                         filtered_products.append(product)
 
                 values_for_update = {
