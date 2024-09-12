@@ -467,6 +467,10 @@ def calculate_mp_price_with_profitability(user_id):
         'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
     products_to_update = []
     products_to_create = []
+    for prod in mp_products_list:
+        x = MarketplaceCommission.objects.filter(marketplace_product=prod)
+        if len(x) == 0:
+            print('нет комиссии', prod)
     for product in mp_products_list:
         if product.platform.name == 'OZON':
             comission = product.marketproduct_comission.fbs_commission
