@@ -4,7 +4,7 @@ import traceback
 from functools import wraps
 
 import requests
-import telegram
+# import telegram
 from asgiref.sync import sync_to_async
 from django.db.models import Count, Q
 
@@ -23,7 +23,7 @@ from unit_economics.models import (MarketplaceAction, MarketplaceCategory,
 from unit_economics.serializers import MarketplaceProductSerializer
 
 logger = logging.getLogger(__name__)
-bot = telegram.Bot(token=TELEGRAM_TOKEN)
+# bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
 
 # def sender_error_to_tg(func):
