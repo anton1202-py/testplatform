@@ -18,13 +18,13 @@ from unit_economics.tasks_yandex import (
     yandex_add_products_data_to_db, yandex_comission_logistic_add_data_to_db)
 
 
-@app.task(bind=True)
+@app.task()
 def update_moy_sklad_product_list():
     """Обновляет данные о продуктах c Мой Склад"""
     moy_sklad_add_data_to_db()
 
 
-@app.task(bind=True)
+@app.task()
 def update_wildberries_product_list():
     """Обновляет данные о продуктах c Wildberries"""
     wb_products_data_to_db()
@@ -32,21 +32,21 @@ def update_wildberries_product_list():
     wb_logistic_add_to_db()
 
 
-@app.task(bind=True)
+@app.task()
 def update_ozon_product_list():
     """Обновляет данные о продуктах c Ozon"""
     ozon_products_data_to_db()
     ozon_comission_logistic_add_data_to_db()
 
 
-@app.task(bind=True)
+@app.task()
 def update_yandex_product_list():
     """Обновляет данные о продуктах c Yandex"""
     yandex_add_products_data_to_db()
     yandex_comission_logistic_add_data_to_db()
 
 
-# @app.task(bind=True)
+@app.task()
 def moy_sklad_costprice_add_to_db():
     """
     Записывает себестоимость (методом оприходования) товара в базу данных
@@ -69,7 +69,7 @@ def moy_sklad_costprice_add_to_db():
                 )
 
 
-# @app.task(bind=True)
+@app.task()
 def action_article_price_to_db():
     """
     Записывает возможные цены артикулов из акции
