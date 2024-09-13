@@ -6,7 +6,7 @@ from unit_economics.views import (  # ProductsByCategoryAPIView)
     MarketplaceActionListView, MarketplaceProductPriceWithProfitabilityViewSet,
     MarketplaceProductViewSet, PlatformViewSet, ProductMoySkladViewSet,
     ProductNameViewSet, ProductPriceMSViewSet, ProfitabilityAPIView,
-    UpdatePriceView, UserIdView)
+    TopSelectorsViewSet, UpdatePriceView, UserIdView)
 
 router = DefaultRouter()
 router.register(r'product-create-db-my-sklad',
@@ -15,6 +15,7 @@ router.register(r'platforms', PlatformViewSet, basename='platform')
 router.register(r'marketplace-products', MarketplaceProductViewSet,
                 basename='marketplace-product')  # работает тестим
 router.register(r'accounts', AccountViewSet, basename='account')
+# router.register(r'topselectors', TopSelectorsViewSet, basename='topselectors')
 router.register(r'brands', BrandViewSet, basename='brand')
 router.register(r'product-names', ProductNameViewSet, basename='product-name')
 router.register(r'profitability-fifo', MarketplaceProductPriceWithProfitabilityViewSet,
@@ -33,4 +34,5 @@ urlpatterns = [
     path('marketplace-actions/', MarketplaceActionListView.as_view(),
          name='marketplace-actions-list'),
     path('user-id/', UserIdView.as_view(), name='user-id'),
+    path('topselectors/', TopSelectorsViewSet.as_view(), name='topselectors'),
 ]

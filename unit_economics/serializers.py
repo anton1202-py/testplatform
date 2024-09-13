@@ -24,6 +24,13 @@ class AccountSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'platform']
 
 
+class AccountSelectSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Account
+        fields = ['id', 'name']
+
+
 class BrandSerializer(serializers.Serializer):
     brand = serializers.CharField()
 
@@ -37,6 +44,12 @@ class ProductPriceSerializer(serializers.ModelSerializer):
         model = ProductPrice
         fields = ['id', 'name', 'brand', 'vendor', 'barcode',
                   'product_type', 'cost_price']
+
+
+class ProductPriceSelectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductPrice
+        fields = ['id', 'name', 'brand', 'vendor']
 
 
 class MarketplaceProductSerializer(serializers.ModelSerializer):

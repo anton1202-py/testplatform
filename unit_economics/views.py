@@ -30,11 +30,12 @@ from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
-    AccountSerializer, BrandSerializer, MarketplaceActionSerializer,
-    MarketplaceCommissionSerializer,
+    AccountSelectSerializer, AccountSerializer, BrandSerializer,
+    MarketplaceActionSerializer, MarketplaceCommissionSerializer,
     MarketplaceProductPriceWithProfitabilitySerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
-    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer)
+    ProductPriceSelectSerializer, ProductPriceSerializer,
+    ProfitabilityMarketplaceProductSerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -133,6 +134,106 @@ class ProductMoySkladViewSet(ModelViewSet):
     queryset = (ProductPrice.objects.all()
                 .annotate(product_count=Count('id')))
     serializer_class = ProductPriceSerializer
+
+
+class TopSelectorsViewSet(GenericAPIView):
+    """
+    Получаем информацию по выбору для верхних селекторов на странице
+
+    > Магазин
+    > Бренд
+    > Товар
+    > Маркетплейс
+    > Фулфилмент
+
+    На выходе получем словарь с данными:
+    {
+        accounts: [
+            {
+                "id": "account_id",
+                "name": "account_name",
+            }
+        ],
+        platforms: [
+            {
+                "id": platform_id,
+                "name": "platform_name",
+                "platform_type": platform_type
+            }
+        ],
+        brands: [
+            {
+                "brand": "brand_name",
+            }
+        ],
+        goods:[
+            {
+                "id": product_id,
+                "name": "product_name",
+                "brand": "brand_name",
+                "vendor": "seller_article"
+            }
+        ]
+    }
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = PlatformSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        GET-запрос для получения отфильтрованных данных
+        """
+        user_id = self.request.query_params.get('user_id')
+        accounts_data = Account.objects.filter(user__id=user_id)
+        platforms_data = Platform.objects.all()
+        brands_data = ProductPrice.objects.all().values('brand').distinct()
+        goods_data = ProductPrice.objects.filter(account__user__id=user_id)
+
+        top_selection_platform_id = self.request.query_params.get(
+            'top_selection_platform_id')
+        top_selection_account_id = self.request.query_params.get(
+            'top_selection_account_id')
+        top_selection_brand = self.request.query_params.get(
+            'top_selection_brand')
+        top_selection_product_name = self.request.query_params.get(
+            'top_selection_product_name')
+
+        # В приоритете верхние фильтры
+        if top_selection_platform_id:
+            platforms_data = platforms_data.filter(
+                Q(id=top_selection_platform_id))
+            accounts_data = accounts_data.filter(
+                platform__id=top_selection_platform_id)
+            goods_data = goods_data.filter(
+                Q(mp_product__platform__id=top_selection_platform_id)).distinct()
+
+        if top_selection_account_id:
+            accounts_data = accounts_data.filter(id=top_selection_account_id)
+            goods_data = goods_data.filter(
+                Q(mp_product__account__id=top_selection_account_id)).distinct()
+
+        if top_selection_brand:
+            brands = top_selection_brand.split(',')
+            goods_data = goods_data.filter(brand__in=brands)
+
+        # if top_selection_product_name:
+        #     products_list = top_selection_product_name.split(',')
+        #     queryset = queryset.filter(
+        #         mp_product__product__id__in=products_list)
+        #     product_situations = product_situations.filter(
+        #         id__in=products_list)
+
+        try:
+
+            main_result = {
+                "accounts": AccountSelectSerializer(accounts_data, many=True).data,
+                "platforms": PlatformSerializer(platforms_data, many=True).data,
+                "brands": brands_data,
+                "goods": ProductPriceSelectSerializer(goods_data, many=True).data,
+            }
+            return Response(main_result, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class PlatformViewSet(viewsets.ReadOnlyModelViewSet):
