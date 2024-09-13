@@ -289,12 +289,13 @@ class ProfitabilityAPIView(GenericAPIView):
 
         if top_selection_brand:
             brands = top_selection_brand.split(',')
-            queryset = queryset.filter(product__brand__in=brands)
+            queryset = queryset.filter(mp_product__product__brand__in=brands)
             product_situations = product_situations.filter(brand__in=brands)
 
         if top_selection_product_name:
             products_list = top_selection_product_name.split(',')
-            queryset = queryset.filter(id__in=products_list)
+            queryset = queryset.filter(
+                mp_product__product__id__in=products_list)
             product_situations = product_situations.filter(
                 id__in=products_list)
 
