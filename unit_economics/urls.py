@@ -1,13 +1,12 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from unit_economics.views import (AccountViewSet, BrandViewSet,
-                                  MarketplaceProductViewSet, PlatformViewSet,
-                                  ProductMoySkladViewSet, ProductNameViewSet,
-                                  ProductPriceMSViewSet, ProfitabilityAPIView, UpdatePriceView,
-                                  CalculateMarketplacePriceView, MarketplaceActionListView,
-                                  MarketplaceProductPriceWithProfitabilityViewSet, UserIdView,
-                                  )# ProductsByCategoryAPIView)
+from unit_economics.views import (  # ProductsByCategoryAPIView)
+    AccountViewSet, BrandViewSet, CalculateMarketplacePriceView,
+    MarketplaceActionListView, MarketplaceProductPriceWithProfitabilityViewSet,
+    MarketplaceProductViewSet, PlatformViewSet, ProductMoySkladViewSet,
+    ProductNameViewSet, ProductPriceMSViewSet, ProfitabilityAPIView,
+    UpdatePriceView, UserIdView)
 
 router = DefaultRouter()
 router.register(r'product-create-db-my-sklad',
@@ -27,8 +26,11 @@ urlpatterns = [
          ProfitabilityAPIView.as_view(), name='profitability-api'),
     # path('profitability/<int:user_id>/products_by_category/', ProductsByCategoryAPIView.as_view(),
     #      name='products_by_category'),
-    path('unit_economics/update-price/', UpdatePriceView.as_view(), name='update-price'),
-    path('calculate-marketplace-price/', CalculateMarketplacePriceView.as_view(), name='calculate-marketplace-price'),
-    path('marketplace-actions/', MarketplaceActionListView.as_view(), name='marketplace-actions-list'),
+    path('unit_economics/update-price/',
+         UpdatePriceView.as_view(), name='update-price'),
+    path('calculate-marketplace-price/', CalculateMarketplacePriceView.as_view(),
+         name='calculate-marketplace-price'),
+    path('marketplace-actions/', MarketplaceActionListView.as_view(),
+         name='marketplace-actions-list'),
     path('user-id/', UserIdView.as_view(), name='user-id'),
 ]

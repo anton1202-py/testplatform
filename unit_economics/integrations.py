@@ -228,85 +228,85 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None):
     products_to_create = []
     filtered_products = []
 
-    for product in mp_products_list:
-        try:
-            if product.platform.name == 'OZON':
-                account = product.account
-                price = ProductOzonPrice.objects.get(
-                    account=account, product=product.product).ozon_price
-                comission = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
-                    product, 'marketproduct_logistic') else 0
-            elif product.platform.name == 'Wildberries':
-                price = ProductForMarketplacePrice.objects.get(
-                    product=product.product).wb_price
-                comission = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
-                    product, 'marketproduct_logistic') else 0
-            elif product.platform.name == 'Яндекс Маркет':
-                price = ProductForMarketplacePrice.objects.get(
-                    product=product.product).yandex_price
-                comission = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
-                    product, 'marketproduct_logistic') else 0
-            else:
-                continue  # Пропускаем неизвестные платформы
+    # for product in mp_products_list:
+    #     try:
+    #         if product.platform.name == 'OZON':
+    #             account = product.account
+    #             price = ProductOzonPrice.objects.get(
+    #                 account=account, product=product.product).ozon_price
+    #             comission = product.marketproduct_comission.fbs_commission if hasattr(
+    #                 product, 'marketproduct_comission') else 0
+    #             logistic_cost = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
+    #                 product, 'marketproduct_logistic') else 0
+    #         elif product.platform.name == 'Wildberries':
+    #             price = ProductForMarketplacePrice.objects.get(
+    #                 product=product.product).wb_price
+    #             comission = product.marketproduct_comission.fbs_commission if hasattr(
+    #                 product, 'marketproduct_comission') else 0
+    #             logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
+    #                 product, 'marketproduct_logistic') else 0
+    #         elif product.platform.name == 'Яндекс Маркет':
+    #             price = ProductForMarketplacePrice.objects.get(
+    #                 product=product.product).yandex_price
+    #             comission = product.marketproduct_comission.fbs_commission if hasattr(
+    #                 product, 'marketproduct_comission') else 0
+    #             logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
+    #                 product, 'marketproduct_logistic') else 0
+    #         else:
+    #             continue  # Пропускаем неизвестные платформы
 
-            product_cost_price = product.product.cost_price/100
+    #         product_cost_price = product.product.cost_price/100
 
-            if price > 0:
-                search_params = {'mp_product': product}
-                try:
-                    profitability_product = ProfitabilityMarketplaceProduct.objects.get(
-                        **search_params)
-                    overheads = profitability_product.overheads
-                except ProfitabilityMarketplaceProduct.DoesNotExist:
-                    overheads = overheads
-                profit = round((price - float(product_cost_price) -
-                                logistic_cost - comission - (overheads * price)), 2)
-                profitability = round(((profit / price) * 100), 2)
+    #         if price > 0:
+    #             search_params = {'mp_product': product}
+    #             try:
+    #                 profitability_product = ProfitabilityMarketplaceProduct.objects.get(
+    #                     **search_params)
+    #                 overheads = profitability_product.overheads
+    #             except ProfitabilityMarketplaceProduct.DoesNotExist:
+    #                 overheads = overheads
+    #             profit = round((price - float(product_cost_price) -
+    #                             logistic_cost - comission - (overheads * price)), 2)
+    #             profitability = round(((profit / price) * 100), 2)
 
-                # Добавляем фильтрацию по группе рентабельности
-                if profitability_group:
-                    if profitability_group == 'count_above_20' and profitability > 20:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_10_and_20' and 10 < profitability <= 20:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_0_and_10' and 0 < profitability <= 10:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_0_and_minus_10' and -10 < profitability <= 0:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_minus10_and_minus_20' and -20 < profitability <= -10:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_below_minus_20' and profitability <= -20:
-                        filtered_products.append(product)
+    #             # Добавляем фильтрацию по группе рентабельности
+    #             if profitability_group:
+    #                 if profitability_group == 'count_above_20' and profitability > 20:
+    #                     filtered_products.append(product)
+    #                 elif profitability_group == 'count_between_10_and_20' and 10 < profitability <= 20:
+    #                     filtered_products.append(product)
+    #                 elif profitability_group == 'count_between_0_and_10' and 0 < profitability <= 10:
+    #                     filtered_products.append(product)
+    #                 elif profitability_group == 'count_between_0_and_minus_10' and -10 < profitability <= 0:
+    #                     filtered_products.append(product)
+    #                 elif profitability_group == 'count_between_minus10_and_minus_20' and -20 < profitability <= -10:
+    #                     filtered_products.append(product)
+    #                 elif profitability_group == 'count_below_minus_20' and profitability <= -20:
+    #                     filtered_products.append(product)
 
-                values_for_update = {
-                    "profit": profit,
-                    "profitability": profitability
-                }
-                if 'profitability_product' in locals():
-                    # Обновляем существующий объект
-                    profitability_product.profit = profit
-                    profitability_product.profitability = profitability
-                    products_to_update.append(profitability_product)
-                else:
-                    # Создаем новый объект
-                    products_to_create.append(ProfitabilityMarketplaceProduct(
-                        mp_product=product, **values_for_update))
-        except (ProductOzonPrice.DoesNotExist, ProductForMarketplacePrice.DoesNotExist):
-            # Пропускаем продукты, для которых нет цены
-            continue
+    #             values_for_update = {
+    #                 "profit": profit,
+    #                 "profitability": profitability
+    #             }
+    #             if 'profitability_product' in locals():
+    #                 # Обновляем существующий объект
+    #                 profitability_product.profit = profit
+    #                 profitability_product.profitability = profitability
+    #                 products_to_update.append(profitability_product)
+    #             else:
+    #                 # Создаем новый объект
+    #                 products_to_create.append(ProfitabilityMarketplaceProduct(
+    #                     mp_product=product, **values_for_update))
+    #     except (ProductOzonPrice.DoesNotExist, ProductForMarketplacePrice.DoesNotExist):
+    #         # Пропускаем продукты, для которых нет цены
+    #         continue
 
-    if products_to_update:
-        ProfitabilityMarketplaceProduct.objects.bulk_update(
-            products_to_update, ['profit', 'profitability'])
+    # if products_to_update:
+    #     ProfitabilityMarketplaceProduct.objects.bulk_update(
+    #         products_to_update, ['profit', 'profitability'])
 
-    if products_to_create:
-        ProfitabilityMarketplaceProduct.objects.bulk_create(products_to_create)
+    # if products_to_create:
+    #     ProfitabilityMarketplaceProduct.objects.bulk_create(products_to_create)
 
     result = ProfitabilityMarketplaceProduct.objects.aggregate(
         count_above_20=Count('id', filter=Q(profitability__gt=20)),
