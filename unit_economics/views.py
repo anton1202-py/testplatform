@@ -2,7 +2,7 @@ import logging
 
 import requests
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -26,7 +26,7 @@ from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
                                    MarketplaceProduct,
                                    MarketplaceProductPriceWithProfitability,
                                    ProductPrice,
-                                   ProfitabilityMarketplaceProduct)
+                                   ProfitabilityMarketplaceProduct, MarketplaceProductInAction)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
@@ -294,7 +294,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = MarketplaceProduct.objects.filter(account__user=user)
+        queryset = MarketplaceProduct.objects.filter(account__user=user).select_related('mp_product_profit_price')
 
         top_selection_platform_id = self.request.query_params.get(
             'top_selection_platform_id')
@@ -326,6 +326,11 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if top_selection_product_name:
             products_list = top_selection_product_name.split(',')
             queryset = queryset.filter(product__id__in=products_list)
+
+        # Добавляем prefetch_related для акции
+        queryset = queryset.prefetch_related(
+            Prefetch('product_in_action', queryset=MarketplaceProductInAction.objects.select_related('action'))
+        )
 
         return queryset
 
