@@ -224,7 +224,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(product__brand__in=brands)
         if top_selection_product_name:
             products_list = top_selection_product_name.split(',')
-            queryset = queryset.filter(id__in=products_list)
+            queryset = queryset.filter(product__id__in=products_list)
 
         return queryset
 
