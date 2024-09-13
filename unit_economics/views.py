@@ -261,8 +261,9 @@ class ProfitabilityAPIView(GenericAPIView):
 
         queryset = ProfitabilityMarketplaceProduct.objects.filter(
             Q(mp_product__account__user__id=user_id))
-        product_queryset = ProductPrice.objects.filter(
+        product_situations = ProductPrice.objects.filter(
             Q(account__user__id=user_id))
+
         top_selection_platform_id = self.request.query_params.get(
             'top_selection_platform_id')
         top_selection_account_id = self.request.query_params.get(
@@ -278,19 +279,24 @@ class ProfitabilityAPIView(GenericAPIView):
         if top_selection_platform_id:
             queryset = queryset.filter(
                 Q(mp_product__platform__id=top_selection_platform_id))
-            # product_queryset = product_queryset.filter(
-            #     Q(mp_product__platform__id=top_selection_platform_id))
+            product_situations = product_situations.filter(
+                Q(mp_product__platform__id=top_selection_platform_id)).distinct()
         if top_selection_account_id:
             queryset = queryset.filter(mp_product__account__id=int(
                 top_selection_account_id))
+            product_situations = product_situations.filter(
+                Q(mp_product__account__id=top_selection_account_id))
 
         if top_selection_brand:
             brands = top_selection_brand.split(',')
             queryset = queryset.filter(product__brand__in=brands)
+            product_situations = product_situations.filter(brand__in=brands)
 
         if top_selection_product_name:
             products_list = top_selection_product_name.split(',')
             queryset = queryset.filter(id__in=products_list)
+            product_situations = product_situations.filter(
+                id__in=products_list)
 
         try:
             result = queryset.aggregate(
@@ -306,7 +312,13 @@ class ProfitabilityAPIView(GenericAPIView):
                 count_below_minus_20=Count(
                     'id', filter=Q(profitability__lte=-20)),
             )
-            return Response(result, status=status.HTTP_200_OK)
+            product_situations = len(product_situations)
+            main_result = {
+                'diagram_data': result,
+                'product_situations': product_situations
+
+            }
+            return Response(main_result, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
