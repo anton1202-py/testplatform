@@ -186,8 +186,8 @@ def ozon_action_article_price_to_db(account, actions_data, platform):
                 nom_id = action_oz['id']
                 if MarketplaceProduct.objects.filter(
                         account=account, sku=nom_id).exists():
-                    marketplace_product = MarketplaceProduct.objects.get(
-                        account=account, sku=nom_id)
+                    marketplace_product = MarketplaceProduct.objects.filter(
+                        account=account, sku=nom_id)[0]
                     action = data
                     product_price = action_oz['max_action_price']
                     if action_oz['action_price'] != 0:

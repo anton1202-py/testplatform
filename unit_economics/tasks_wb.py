@@ -227,8 +227,8 @@ def wb_action_article_price_to_db(account, actions_data, platform, wb_token):
         if action_data:
             for action in action_data:
                 nom_id = action['id']
-                marketplace_product = MarketplaceProduct.objects.get(
-                    account=account, platform=platform, sku=nom_id)
+                marketplace_product = MarketplaceProduct.objects.filter(
+                    account=account, platform=platform, sku=nom_id)[0]
                 action = data
                 product_price = action['price']
                 status = action['inAction']
