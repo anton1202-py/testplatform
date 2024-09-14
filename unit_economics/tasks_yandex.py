@@ -79,8 +79,6 @@ def yandex_add_products_data_to_db():
                                     sku = market_data.get('marketSku', 0)
                                     seller_article = product_data.get(
                                         'offerId', '')
-                                    if barcode == 6937888221576 or barcode == '6937888221576':
-                                        print(sku, product_data)
                                     category_number = market_data.get(
                                         'marketCategoryId', 0)
                                     category_name = market_data.get(

@@ -4,7 +4,7 @@ from core.models import Account, Platform
 
 
 class ProductPrice(models.Model):
-    """Модель для хранения цены товара на разных платформах """
+    """Модель для хранения цены товара на разных платформах"""
     account = models.ForeignKey(
         Account, related_name='accounts', on_delete=models.CASCADE, verbose_name='Аккаунт')
     moy_sklad_product_number = models.CharField(

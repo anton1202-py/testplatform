@@ -2,11 +2,11 @@ import logging
 
 import requests
 from django.db import transaction
-from django.utils import timezone
 from django.db.models import Count, Q
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -18,18 +18,24 @@ from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
 from api_requests.moy_sklad import change_product_price
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
-from unit_economics.integrations import (profitability_calculate,
-                                         save_overheds_for_mp_product, update_price_info_from_user_request,
-                                         calculate_mp_price_with_profitability)
-from unit_economics.models import (MarketplaceCommission, MarketplaceProduct,
-                                   ProductPrice, MarketplaceAction, MarketplaceProductPriceWithProfitability)
+from unit_economics.integrations import (calculate_mp_price_with_profitability,
+                                         profitability_calculate,
+                                         save_overheds_for_mp_product,
+                                         update_price_info_from_user_request)
+from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
+                                   MarketplaceProduct,
+                                   MarketplaceProductPriceWithProfitability,
+                                   ProductPrice,
+                                   ProfitabilityMarketplaceProduct)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
-    AccountSerializer, BrandSerializer, MarketplaceCommissionSerializer,
+    AccountSelectSerializer, AccountSerializer, BrandSerializer,
+    MarketplaceActionSerializer, MarketplaceCommissionSerializer,
+    MarketplaceProductPriceWithProfitabilitySerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
-    ProductPriceSerializer, ProfitabilityMarketplaceProductSerializer, MarketplaceActionSerializer,
-    MarketplaceProductPriceWithProfitabilitySerializer)
+    ProductPriceSelectSerializer, ProductPriceSerializer,
+    ProfitabilityMarketplaceProductSerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -100,8 +106,9 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
             account.authorization_fields['token'] = TOKEN_MY_SKLAD
             account.save()
         total_processed = 0  # Счетчик обработанных записей
+
         # change_product_price(TOKEN_MY_SKLAD)
-        # moy_sklad_add_data_to_db()
+        moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
@@ -110,9 +117,9 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
         # profitability_calculate(user_id=user.id)
-        moy_sklad_costprice_add_to_db()
+        # moy_sklad_costprice_add_to_db()
         calculate_mp_price_with_profitability(user.id)
-        action_article_price_to_db()
+        # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -127,6 +134,104 @@ class ProductMoySkladViewSet(ModelViewSet):
     queryset = (ProductPrice.objects.all()
                 .annotate(product_count=Count('id')))
     serializer_class = ProductPriceSerializer
+
+
+class TopSelectorsViewSet(GenericAPIView):
+    """
+    Получаем информацию по выбору для верхних селекторов на странице
+
+    > Магазин
+    > Бренд
+    > Товар
+    > Маркетплейс
+    > Фулфилмент
+
+    На выходе получем словарь с данными:
+    {
+        accounts: [
+            {
+                "id": "account_id",
+                "name": "account_name",
+            }
+        ],
+        platforms: [
+            {
+                "id": platform_id,
+                "name": "platform_name",
+                "platform_type": platform_type
+            }
+        ],
+        brands: [
+            {
+                "brand": "brand_name",
+            }
+        ],
+        goods:[
+            {
+                "id": product_id,
+                "name": "product_name",
+                "brand": "brand_name",
+                "vendor": "seller_article"
+            }
+        ]
+    }
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = PlatformSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        GET-запрос для получения отфильтрованных данных
+        """
+        user_id = self.request.query_params.get('user_id')
+        accounts_data = Account.objects.filter(user__id=user_id)
+        platforms_data = Platform.objects.all()
+        brands_data = ProductPrice.objects.all().values('brand').distinct()
+        goods_data = ProductPrice.objects.filter(account__user__id=user_id)
+
+        top_selection_platform_id = self.request.query_params.get(
+            'top_selection_platform_id')
+        top_selection_account_id = self.request.query_params.get(
+            'top_selection_account_id')
+        top_selection_brand = self.request.query_params.get(
+            'top_selection_brand')
+        top_selection_product_name = self.request.query_params.get(
+            'top_selection_product_name')
+
+        # В приоритете верхние фильтры
+        if top_selection_platform_id:
+            platforms_data = platforms_data.filter(
+                Q(id=top_selection_platform_id))
+            accounts_data = accounts_data.filter(
+                platform__id=top_selection_platform_id)
+            goods_data = goods_data.filter(
+                Q(mp_product__platform__id=top_selection_platform_id)).distinct()
+
+        if top_selection_account_id:
+            accounts_data = accounts_data.filter(id=top_selection_account_id)
+            goods_data = goods_data.filter(
+                Q(mp_product__account__id=top_selection_account_id)).distinct()
+
+        if top_selection_brand:
+            brands = top_selection_brand.split(',')
+            goods_data = goods_data.filter(brand__in=brands)
+
+        if top_selection_product_name:
+            products_list = top_selection_product_name.split(',')
+            accounts_data = accounts_data.filter(
+                accounts__id__in=products_list)
+
+        try:
+
+            main_result = {
+                "accounts": AccountSelectSerializer(accounts_data, many=True).data,
+                "platforms": PlatformSerializer(platforms_data, many=True).data,
+                "brands": brands_data,
+                "goods": ProductPriceSelectSerializer(goods_data, many=True).data,
+            }
+            return Response(main_result, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class PlatformViewSet(viewsets.ReadOnlyModelViewSet):
@@ -178,32 +283,67 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductSerializer
-    filter_backends = [SearchFilter, OrderingFilter]  # Подключаем поиск и сортировку
+    # Подключаем поиск и сортировку
+    filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['name', 'barcode']  # Поля для поиска
-    ordering_fields = ['mp_profitability__profit', 'mp_profitability__profitability']  # Поля для сортировки ['profit', 'profitability']
+    # Поля для сортировки ['profit', 'profitability']
+    ordering_fields = ['mp_profitability__profit',
+                       'mp_profitability__profitability']
 
     def get_queryset(self):
         user = self.request.user
         queryset = MarketplaceProduct.objects.filter(account__user=user)
 
-        platform_id = self.request.query_params.get('platform_id')
-        account_id = self.request.query_params.get('account_id')
-        brand = self.request.query_params.get('brand')
-        product_name = self.request.query_params.get('product_name')
-        # Фильтрация по умолчанию по платформе "Wildberries"
-        if not platform_id:
-            platform_id = 1  # ID платформы "Wildberries"
+        top_selection_platform_id = self.request.query_params.get(
+            'top_selection_platform_id')
+        top_selection_account_id = self.request.query_params.get(
+            'top_selection_account_id')
+        top_selection_brand = self.request.query_params.get(
+            'top_selection_brand')
+        top_selection_product_name = self.request.query_params.get(
+            'top_selection_product_name')
 
-        if platform_id:
-            queryset = queryset.filter(platform_id=platform_id)
-        if account_id:
-            queryset = queryset.filter(account_id=account_id)
-        if brand:
-            queryset = queryset.filter(product__brand=brand)
-        if product_name:
-            queryset = queryset.filter(product__name__icontains=product_name)
+        # Повторяющиеся фильтры в верху страницы и вверху таблицы.
+        table_platform_id = self.request.query_params.get('table_platform_id')
+
+        filter_platform_id = ''
+
+        # В приоритете верхние фильтры
+        if top_selection_platform_id:
+            filter_platform_id = top_selection_platform_id
+        elif table_platform_id:
+            filter_platform_id = table_platform_id
+
+        if filter_platform_id:
+            queryset = queryset.filter(platform__id=filter_platform_id)
+        if top_selection_account_id:
+            queryset = queryset.filter(account__id=top_selection_account_id)
+        if top_selection_brand:
+            brands = top_selection_brand.split(',')
+            queryset = queryset.filter(product__brand__in=brands)
+        if top_selection_product_name:
+            products_list = top_selection_product_name.split(',')
+            queryset = queryset.filter(product__id__in=products_list)
 
         return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        profitability_group = request.query_params.get('profitability_group')
+        if profitability_group:
+            result = profitability_calculate(
+                request.user.id, profitability_group=profitability_group)
+            queryset = queryset.filter(
+                id__in=[p.id for p in result['filtered_products']])
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class ProfitabilityAPIView(GenericAPIView):
@@ -214,18 +354,71 @@ class ProfitabilityAPIView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
+        GET-запрос для расчета рентабельности всех товаров пользователя.
         """
         user_id = self.kwargs.get('user_id')
-        category = request.query_params.get('category')
+
+        queryset = ProfitabilityMarketplaceProduct.objects.filter(
+            Q(mp_product__account__user__id=user_id))
+        product_situations = ProductPrice.objects.filter(
+            Q(account__user__id=user_id))
+
+        top_selection_platform_id = self.request.query_params.get(
+            'top_selection_platform_id')
+        top_selection_account_id = self.request.query_params.get(
+            'top_selection_account_id')
+        top_selection_brand = self.request.query_params.get(
+            'top_selection_brand')
+        top_selection_product_name = self.request.query_params.get(
+            'top_selection_product_name')
+
+        # Повторяющиеся фильтры в верху страницы и вверху таблицы
+
+        # В приоритете верхние фильтры
+        if top_selection_platform_id:
+            queryset = queryset.filter(
+                Q(mp_product__platform__id=top_selection_platform_id))
+            product_situations = product_situations.filter(
+                Q(mp_product__platform__id=top_selection_platform_id)).distinct()
+        if top_selection_account_id:
+            queryset = queryset.filter(mp_product__account__id=int(
+                top_selection_account_id))
+            product_situations = product_situations.filter(
+                Q(mp_product__account__id=top_selection_account_id))
+
+        if top_selection_brand:
+            brands = top_selection_brand.split(',')
+            queryset = queryset.filter(mp_product__product__brand__in=brands)
+            product_situations = product_situations.filter(brand__in=brands)
+
+        if top_selection_product_name:
+            products_list = top_selection_product_name.split(',')
+            queryset = queryset.filter(
+                mp_product__product__id__in=products_list)
+            product_situations = product_situations.filter(
+                id__in=products_list)
 
         try:
-            result = profitability_calculate(user_id)
-            if category:
-                products = result['products_by_profitability'].get(category, [])
-                return Response(products, status=status.HTTP_200_OK)
-            else:
-                return Response(result, status=status.HTTP_200_OK)
+            result = queryset.aggregate(
+                count_above_20=Count('id', filter=Q(profitability__gt=20)),
+                count_between_10_and_20=Count('id', filter=Q(
+                    profitability__lte=20) & Q(profitability__gt=10)),
+                count_between_0_and_10=Count('id', filter=Q(
+                    profitability__lte=10) & Q(profitability__gt=0)),
+                count_between_0_and_minus_10=Count('id', filter=Q(
+                    profitability__lte=0) & Q(profitability__gt=-10)),
+                count_between_minus10_and_minus_20=Count('id', filter=Q(
+                    profitability__lte=-10) & Q(profitability__gt=-20)),
+                count_below_minus_20=Count(
+                    'id', filter=Q(profitability__lte=-20)),
+            )
+            product_situations = len(product_situations)
+            main_result = {
+                'diagram_data': result,
+                'product_situations': product_situations
+
+            }
+            return Response(main_result, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -255,39 +448,89 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProductsByCategoryAPIView(APIView):
-    def get(self, request, user_id):
-        category = request.query_params.get('category')
-        if not category:
-            return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+# class ProfitabilityAPIView(GenericAPIView):
+#     """
+#     API для расчета рентабельности и сохранения накладных расходов.
+#     """
+#     serializer_class = ProfitabilityMarketplaceProductSerializer
+#
+#     def get(self, request, *args, **kwargs):
+#         """
+#         GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
+#         """
+#         user_id = self.kwargs.get('user_id')
+#         category = request.query_params.get('category')
+#
+#         try:
+#             result = profitability_calculate(user_id)
+#             if category:
+#                 products = result['products_by_profitability'].get(
+#                     category, [])
+#                 return Response(products, status=status.HTTP_200_OK)
+#             else:
+#                 return Response(result, status=status.HTTP_200_OK)
+#         except User.DoesNotExist:
+#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+#
+#     def post(self, request, *args, **kwargs):
+#         """
+#         POST-запрос для обновления накладных расходов и пересчета рентабельности.
+#         Входящие данные:
+#         mp_product_dict: словарь типа {mp_product_id: product_overheads}
+#         mp_product_id - id продлукта из таблицы MarketplaceProduct
+#         product_overheads - накладные расходы в формате float (например 0.2)
+#         """
+#         overheads_data = request.data.get('overheads_data', {})
+#         user_id = request.data.get('user_id')
+#
+#         if not overheads_data or not user_id:
+#             return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         try:
+#             # Сохраняем накладные расходы
+#             save_overheds_for_mp_product(overheads_data)
+#
+#             # Пересчитываем рентабельность
+#             result = profitability_calculate(user_id)
+#
+#             return Response(result, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        filter_conditions = {
-            'above_20': Q(mp_profitability__profitability__gt=20),
-            'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
-            'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
-            'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(mp_profitability__profitability__gt=-10),
-            'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(mp_profitability__profitability__lt=-10),
-            'below_minus_20': Q(mp_profitability__profitability__lt=-20),
-        }
-
-        if category not in filter_conditions:
-            return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
-
-        products = MarketplaceProduct.objects.filter(
-            account__user=user
-        ).filter(
-            filter_conditions[category]
-        ).select_related(
-            'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
-        )
-
-        serializer = MarketplaceProductSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+# class ProductsByCategoryAPIView(APIView):
+#     def get(self, request, user_id):
+#         category = request.query_params.get('category')
+#         if not category:
+#             return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         try:
+#             user = User.objects.get(id=user_id)
+#         except User.DoesNotExist:
+#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+#
+#         filter_conditions = {
+#             'above_20': Q(mp_profitability__profitability__gt=20),
+#             'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
+#             'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
+#             'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(mp_profitability__profitability__gt=-10),
+#             'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(mp_profitability__profitability__lt=-10),
+#             'below_minus_20': Q(mp_profitability__profitability__lt=-20),
+#         }
+#
+#         if category not in filter_conditions:
+#             return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         products = MarketplaceProduct.objects.filter(
+#             account__user=user
+#         ).filter(
+#             filter_conditions[category]
+#         ).select_related(
+#             'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
+#         )
+#
+#         serializer = MarketplaceProductSerializer(products, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdatePriceView(GenericAPIView):
@@ -346,7 +589,7 @@ class MarketplaceActionListView(ListAPIView):
         # Фильтрация по платформе, если параметр передан
         platform_id = self.request.query_params.get('platform')
         if platform_id:
-            queryset = queryset.filter(platform_id=platform_id)
+            queryset = queryset.filter(platform__id=platform_id)
         # Фильтрация по названию акции, если параметр передан
         action_name = self.request.query_params.get('action_name')
         if action_name:
@@ -358,12 +601,15 @@ class MarketplaceActionListView(ListAPIView):
 
 
 class MarketplaceProductPriceWithProfitabilityViewSet(viewsets.ReadOnlyModelViewSet):
-    """    profit_price - это по Fifo
-           usual_price = простая рентабельность"""
+    """    
+    profit_price - это по Fifo
+    usual_price = простая рентабельность
+    """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceProductPriceWithProfitabilitySerializer
     filter_backends = [SearchFilter]
-    search_fields = ['mp_product__product__brand']  # Поле для фильтрации по бренду
+    # Поле для фильтрации по бренду
+    search_fields = ['mp_product__product__brand']
 
     def get_queryset(self):
         queryset = MarketplaceProductPriceWithProfitability.objects.all()
