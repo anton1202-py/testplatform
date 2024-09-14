@@ -317,9 +317,11 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             filter_platform_id = table_platform_id
 
         if filter_platform_id:
-            queryset = queryset.filter(platform__id=filter_platform_id)
+            platforms_list = filter_platform_id.split(',')
+            queryset = queryset.filter(platform__id__in=platforms_list)
         if top_selection_account_id:
-            queryset = queryset.filter(account__id=top_selection_account_id)
+            accounts_list = top_selection_account_id.split(',')
+            queryset = queryset.filter(account__id__in=accounts_list)
         if top_selection_brand:
             brands = top_selection_brand.split(',')
             queryset = queryset.filter(product__brand__in=brands)
@@ -378,15 +380,17 @@ class ProfitabilityAPIView(GenericAPIView):
 
         # В приоритете верхние фильтры
         if top_selection_platform_id:
+            platforms_list = top_selection_platform_id.split(',')
             queryset = queryset.filter(
-                Q(mp_product__platform__id=top_selection_platform_id))
+                Q(mp_product__platform__id__in=platforms_list))
             product_situations = product_situations.filter(
-                Q(mp_product__platform__id=top_selection_platform_id)).distinct()
+                Q(mp_product__platform__id__in=platforms_list)).distinct()
         if top_selection_account_id:
-            queryset = queryset.filter(mp_product__account__id=int(
-                top_selection_account_id))
+            accounts_list = top_selection_account_id.split(',')
+            queryset = queryset.filter(
+                mp_product__account__id__in=accounts_list)
             product_situations = product_situations.filter(
-                Q(mp_product__account__id=top_selection_account_id))
+                Q(mp_product__account__id__in=accounts_list))
 
         if top_selection_brand:
             brands = top_selection_brand.split(',')
