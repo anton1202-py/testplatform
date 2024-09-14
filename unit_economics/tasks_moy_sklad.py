@@ -107,7 +107,7 @@ def moy_sklad_add_data_to_db():
                                 total_cost_price = None
                                 break  # Прекращаем суммирование, если есть ошибка
 
-                        cost_price = total_cost_price / 100
+                        cost_price = total_cost_price
 
                     else:
                         message = f'Ошибка при вызове метода (компоненты): {response.status_code}. {response.text}'
@@ -124,7 +124,7 @@ def moy_sklad_add_data_to_db():
                     'vendor': item.get('article', ''),
                     'barcode': [list(barcode.values())[0] for barcode in item.get('barcodes', [])],
                     'product_type': item['meta'].get('type'),
-                    'cost_price': cost_price,
+                    'cost_price': cost_price / 100,
                     'price_info': item['salePrices'],
                     'image_filename': image_filename,
                     'image_content': image_content
