@@ -113,12 +113,12 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
         # ozon_products_data_to_db()
-        # ozon_comission_logistic_add_data_to_db()
+        ozon_comission_logistic_add_data_to_db()
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
         # profitability_calculate(user_id=user.id)
         # moy_sklad_costprice_add_to_db()
-        calculate_mp_price_with_profitability(user.id)
+        # calculate_mp_price_with_profitability(user.id)
         # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
@@ -200,17 +200,19 @@ class TopSelectorsViewSet(GenericAPIView):
 
         # В приоритете верхние фильтры
         if top_selection_platform_id:
+            platforms_list = top_selection_platform_id.split(',')
             platforms_data = platforms_data.filter(
-                Q(id=top_selection_platform_id))
+                Q(id__in=platforms_list))
             accounts_data = accounts_data.filter(
-                platform__id=top_selection_platform_id)
+                platform__id__in=platforms_list)
             goods_data = goods_data.filter(
-                Q(mp_product__platform__id=top_selection_platform_id)).distinct()
+                Q(mp_product__platform__id__in=platforms_list)).distinct()
 
         if top_selection_account_id:
-            accounts_data = accounts_data.filter(id=top_selection_account_id)
+            accounts_list = top_selection_account_id.split(',')
+            accounts_data = accounts_data.filter(id__in=accounts_list)
             goods_data = goods_data.filter(
-                Q(mp_product__account__id=top_selection_account_id)).distinct()
+                Q(mp_product__account__id__in=accounts_list)).distinct()
 
         if top_selection_brand:
             brands = top_selection_brand.split(',')
@@ -407,7 +409,7 @@ class ProfitabilityAPIView(GenericAPIView):
                     profitability__lte=10) & Q(profitability__gt=0)),
                 count_between_0_and_minus_10=Count('id', filter=Q(
                     profitability__lte=0) & Q(profitability__gt=-10)),
-                count_between_minus10_and_minus_20=Count('id', filter=Q(
+                count_between_minus_10_and_minus_20=Count('id', filter=Q(
                     profitability__lte=-10) & Q(profitability__gt=-20)),
                 count_below_minus_20=Count(
                     'id', filter=Q(profitability__lte=-20)),

@@ -88,8 +88,6 @@ def add_marketplace_product_to_db(
                 )
                 objects_for_create.append(product_obj)
             else:
-                if barcode == "2000000120973":
-                    print(barcode, product.barcode, 'update')
                 MarketplaceProduct.objects.filter(account=account, platform=platform, product=product, sku=sku).update(
                     name=name,
                     seller_article=seller_article,

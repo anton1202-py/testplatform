@@ -12,7 +12,8 @@ from unit_economics.integrations import (add_marketplace_comission_to_db,
                                          add_marketplace_logistic_to_db,
                                          add_marketplace_product_to_db)
 from unit_economics.models import (MarketplaceAction, MarketplaceProduct,
-                                   MarketplaceProductInAction, ProductPrice)
+                                   MarketplaceProductInAction,
+                                   ProductOzonPrice, ProductPrice)
 
 #  sender_error_to_tg)
 
@@ -63,17 +64,26 @@ def ozon_comission_logistic_add_data_to_db():
                             platform=Platform.objects.get(
                                 platform_type=MarketplaceChoices.OZON),
                             sku=data['product_id'])[0]
+
+                        main_product_obj = ProductPrice.objects.get(
+                            id=product_obj.product.id)
+                        oz_price = ProductOzonPrice.objects.get(
+                            product=main_product_obj, account=account).ozon_price
                         comissions_data = data['commissions']
-                        fbs_commission = comissions_data['sales_percent_fbs']
-                        fbo_commission = comissions_data['sales_percent_fbo']
+                        fbs_commission = comissions_data['sales_percent_fbs'] * \
+                            oz_price / 100
+                        fbo_commission = comissions_data['sales_percent_fbo'] * \
+                            oz_price / 100
                         add_marketplace_comission_to_db(product_obj, fbs_commission,
                                                         fbo_commission)
 
                         cost_logistic_fbo = comissions_data['fbo_deliv_to_customer_amount'] + \
                             comissions_data['fbo_fulfillment_amount'] + \
-                            comissions_data['fbo_direct_flow_trans_max_amount']
+                            comissions_data['fbo_direct_flow_trans_max_amount'] * \
+                            oz_price / 100
                         cost_logistic_fbs = comissions_data['fbs_deliv_to_customer_amount'] + \
-                            comissions_data['fbs_direct_flow_trans_max_amount']
+                            comissions_data['fbs_direct_flow_trans_max_amount'] * \
+                            oz_price / 100
 
                         add_marketplace_logistic_to_db(
                             product_obj, cost_logistic_fbo=cost_logistic_fbo, cost_logistic_fbs=cost_logistic_fbs)
