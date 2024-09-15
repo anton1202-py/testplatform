@@ -21,7 +21,8 @@ from core.models import Account, Platform, User
 from unit_economics.integrations import (calculate_mp_price_with_profitability,
                                          profitability_calculate,
                                          save_overheds_for_mp_product,
-                                         update_price_info_from_user_request)
+                                         update_price_info_from_user_request,
+                                         calculate_mp_price_with_incoming_profitability)
 from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
                                    MarketplaceProduct,
                                    MarketplaceProductPriceWithProfitability,
@@ -659,6 +660,35 @@ class MarketplaceActionListView(APIView):
 #         # Сериализация и возврат данных
 #         serializer = self.serializer_class(actions, many=True)
 #         return Response(serializer.data)
+
+
+class CalculateMPPriceView(APIView):
+    """
+    Эндпоинт для расчета цены товара на маркетплейсе на основе рентабельности.
+
+    Входящие данные (в теле POST-запроса):
+        incoming_profitability: float - входящая рентабельность с которой сравниваем рентабельность из БД
+        product_ids: list - список ID товаров, которые находятся на странице
+
+    Возвращает:
+        Список объектов модели MarketplaceProduct с обновленными ценами.
+    """
+    def post(self, request, *args, **kwargs):
+        incoming_profitability = request.data.get('incoming_profitability')
+        product_ids = request.data.get('product_ids')
+
+        if not incoming_profitability or not product_ids:
+            return Response({"detail": "Нужно указать входящую рентабельность и список ID товаров"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product_ids = [int(pid) for pid in product_ids]
+        except ValueError:
+            return Response({"detail": "Не верный формат ID товаров"}, status=status.HTTP_400_BAD_REQUEST)
+
+        mp_products_list = calculate_mp_price_with_incoming_profitability(incoming_profitability, product_ids)
+
+        serializer = MarketplaceProductSerializer(mp_products_list, many=True)
+        return Response(serializer.data)
 
 
 class MarketplaceProductPriceWithProfitabilityViewSet(viewsets.ReadOnlyModelViewSet):
