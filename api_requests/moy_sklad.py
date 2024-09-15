@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 import requests
 from django.core.files.base import ContentFile
@@ -125,6 +126,7 @@ def get_assortiment_info(TOKEN_MY_SKLAD, api_url):
         TOKEN_MY_SKLAD - токен учетной записи
         api_url - id ссылка для обращения
     """
+    time.sleep(0.3)
     api_url = f'{api_url}'
     headers = {
         'Authorization': f'Bearer {TOKEN_MY_SKLAD}',

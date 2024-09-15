@@ -118,6 +118,7 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # ozon_comission_logistic_add_data_to_db()
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
+        print(' ')
         profitability_calculate(user_id=user.id)
         moy_sklad_costprice_add_to_db()
         calculate_mp_price_with_profitability(user.id)
