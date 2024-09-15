@@ -39,13 +39,6 @@ class ProductNameSerializer(serializers.Serializer):
     name = serializers.CharField()
 
 
-class ProductPriceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductPrice
-        fields = ['id', 'name', 'brand', 'vendor', 'barcode',
-                  'product_type', 'cost_price']
-
-
 class ProductPriceSelectSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductPrice
@@ -135,7 +128,7 @@ class MarketplaceCommissionSerializer(serializers.ModelSerializer):
 class ProductPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductPrice
-        fields = ['account', 'moy_sklad_product_number', 'name', 'brand', 'vendor', 'barcode', 'product_type',
+        fields = ['id', 'account', 'moy_sklad_product_number', 'name', 'brand', 'vendor', 'barcode', 'product_type',
                   'cost_price', 'image',]
 
 
@@ -148,23 +141,20 @@ class ProfitabilityMarketplaceProductSerializer(serializers.ModelSerializer):
 
 
 class MarketplaceProductInActionSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(
-        source='marketplace_product.name', read_only=True)
 
     class Meta:
         model = MarketplaceProductInAction
-        fields = ['marketplace_product',
-                  'product_price', 'status', 'product_name']
+        fields = ['marketplace_product', 'action', 'product_price', 'status']
 
 
 class MarketplaceActionSerializer(serializers.ModelSerializer):
-    products_in_action = MarketplaceProductInActionSerializer(
-        many=True, source='action')
+    products = MarketplaceProductInActionSerializer(many=True, source='action')  # Используем source для связи
+    platform = PlatformSerializer()
+    account = AccountSerializer()
 
     class Meta:
         model = MarketplaceAction
-        fields = ['platform', 'account', 'action_number', 'action_name',
-                  'date_start', 'date_finish', 'products_in_action']
+        fields = ['platform', 'account', 'action_number', 'action_name', 'date_start', 'date_finish', 'products']
 
 
 class MarketplaceProductPriceWithProfitabilitySerializer(serializers.ModelSerializer):
