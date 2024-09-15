@@ -39,13 +39,6 @@ class ProductNameSerializer(serializers.Serializer):
     name = serializers.CharField()
 
 
-class ProductPriceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductPrice
-        fields = ['id', 'name', 'brand', 'vendor', 'barcode',
-                  'product_type', 'cost_price']
-
-
 class ProductPriceSelectSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductPrice
@@ -54,25 +47,24 @@ class ProductPriceSelectSerializer(serializers.ModelSerializer):
 
 class MarketplaceProductSerializer(serializers.ModelSerializer):
     brand = serializers.CharField(source='product.brand', read_only=True)
-    cost_price = serializers.FloatField(
-        source='product.cost_price', read_only=True)
+    cost_price = serializers.FloatField(source='product.cost_price', read_only=True)
     rrc = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     commission = serializers.SerializerMethodField()
     logistic_cost = serializers.SerializerMethodField()
-    overheads = serializers.FloatField(
-        source='mp_profitability.overheads', read_only=True)
-    profit = serializers.FloatField(
-        source='mp_profitability.profit', read_only=True)
-    profitability = serializers.FloatField(
-        source='mp_profitability.profitability', read_only=True)
+    overheads = serializers.FloatField(source='mp_profitability.overheads', read_only=True)
+    profit = serializers.FloatField(source='mp_profitability.profit', read_only=True)
+    profitability = serializers.FloatField(source='mp_profitability.profitability', read_only=True)
     image = serializers.SerializerMethodField()
+    profit_price = serializers.FloatField(source='mp_product_profit_price.profit_price', read_only=True)
+    usual_price = serializers.FloatField(source='mp_product_profit_price.usual_price', read_only=True)
+    actions = serializers.SerializerMethodField()
 
     class Meta:
         model = MarketplaceProduct
         fields = [
             'id', 'name', 'sku', 'seller_article', 'barcode', 'brand', 'cost_price', 'rrc', 'price', 'commission',
-            'logistic_cost', 'overheads', 'profit', 'profitability', 'image'
+            'logistic_cost', 'overheads', 'profit', 'profitability', 'image', 'profit_price', 'usual_price', 'actions'
         ]
 
     def get_rrc(self, obj):
@@ -85,8 +77,7 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         elif platform_name == 'yandex':
             return obj.product.price_product.yandex_price
         elif platform_name == 'ozon':
-            ozon_price = obj.product.ozon_price_product.filter(
-                account=obj.account).first()
+            ozon_price = obj.product.ozon_price_product.filter(account=obj.account).first()
             return ozon_price.ozon_price if ozon_price else None
         return None
 
@@ -122,6 +113,10 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
             return obj.product.image.url
         return None
 
+    def get_actions(self, obj):
+        actions = MarketplaceProductInAction.objects.filter(marketplace_product=obj)
+        return MarketplaceProductInActionSerializer(actions, many=True).data
+
 
 class MarketplaceCommissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -133,35 +128,33 @@ class MarketplaceCommissionSerializer(serializers.ModelSerializer):
 class ProductPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductPrice
-        fields = ['account', 'moy_sklad_product_number', 'name', 'brand', 'vendor', 'barcode', 'product_type',
+        fields = ['id', 'account', 'moy_sklad_product_number', 'name', 'brand', 'vendor', 'barcode', 'product_type',
                   'cost_price', 'image',]
 
 
 class ProfitabilityMarketplaceProductSerializer(serializers.ModelSerializer):
+    product = ProductPriceSerializer()
+
     class Meta:
-        product = ProductPriceSerializer()
         model = ProfitabilityMarketplaceProduct
         fields = ['product', 'profit', 'profitability', 'overheads']
 
 
 class MarketplaceProductInActionSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(
-        source='marketplace_product.name', read_only=True)
 
     class Meta:
         model = MarketplaceProductInAction
-        fields = ['marketplace_product',
-                  'product_price', 'status', 'product_name']
+        fields = ['marketplace_product', 'action', 'product_price', 'status']
 
 
 class MarketplaceActionSerializer(serializers.ModelSerializer):
-    products_in_action = MarketplaceProductInActionSerializer(
-        many=True, source='action')
+    products = MarketplaceProductInActionSerializer(many=True, source='action')  # Используем source для связи
+    platform = PlatformSerializer()
+    account = AccountSerializer()
 
     class Meta:
         model = MarketplaceAction
-        fields = ['platform', 'account', 'action_number', 'action_name',
-                  'date_start', 'date_finish', 'products_in_action']
+        fields = ['platform', 'account', 'action_number', 'action_name', 'date_start', 'date_finish', 'products']
 
 
 class MarketplaceProductPriceWithProfitabilitySerializer(serializers.ModelSerializer):

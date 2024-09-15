@@ -2,7 +2,7 @@ import logging
 
 import requests
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -21,12 +21,13 @@ from core.models import Account, Platform, User
 from unit_economics.integrations import (calculate_mp_price_with_profitability,
                                          profitability_calculate,
                                          save_overheds_for_mp_product,
-                                         update_price_info_from_user_request)
+                                         update_price_info_from_user_request,
+                                         calculate_mp_price_with_incoming_profitability)
 from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
                                    MarketplaceProduct,
                                    MarketplaceProductPriceWithProfitability,
                                    ProductPrice,
-                                   ProfitabilityMarketplaceProduct)
+                                   ProfitabilityMarketplaceProduct, MarketplaceProductInAction)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
@@ -35,7 +36,7 @@ from unit_economics.serializers import (
     MarketplaceProductPriceWithProfitabilitySerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
     ProductPriceSelectSerializer, ProductPriceSerializer,
-    ProfitabilityMarketplaceProductSerializer)
+    ProfitabilityMarketplaceProductSerializer, MarketplaceProductInActionSerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -218,10 +219,12 @@ class TopSelectorsViewSet(GenericAPIView):
             brands = top_selection_brand.split(',')
             goods_data = goods_data.filter(brand__in=brands)
 
-        if top_selection_product_name:
-            products_list = top_selection_product_name.split(',')
-            accounts_data = accounts_data.filter(
-                accounts__id__in=products_list)
+        # if top_selection_product_name:
+        #     products_list = top_selection_product_name.split(',')
+        #     queryset = queryset.filter(
+        #         mp_product__product__id__in=products_list)
+        #     product_situations = product_situations.filter(
+        #         id__in=products_list)
 
         try:
 
@@ -294,7 +297,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = MarketplaceProduct.objects.filter(account__user=user)
+        queryset = MarketplaceProduct.objects.filter(account__user=user).select_related('mp_product_profit_price')
 
         top_selection_platform_id = self.request.query_params.get(
             'top_selection_platform_id')
@@ -329,6 +332,10 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             products_list = top_selection_product_name.split(',')
             queryset = queryset.filter(product__id__in=products_list)
 
+        # Добавляем prefetch_related для акции
+        queryset = queryset.prefetch_related(
+            Prefetch('product_in_action', queryset=MarketplaceProductInAction.objects.select_related('action'))
+        )
         return queryset
 
     def list(self, request, *args, **kwargs):
@@ -580,9 +587,10 @@ class CalculateMarketplacePriceView(GenericAPIView):
         return Response({"detail": "Цены успешно обновлены."})
 
 
-class MarketplaceActionListView(ListAPIView):
-    """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
-        + параметр название акции action_name и отдаёт отсортированные данные по платформе.
+class MarketplaceActionListView(APIView):
+    """На входе надо список id товаров отфильтрованных по селекторам в body
+       пример "product_ids": [1977, 617, 618, 4242].
+       Дополнительно принимает action_id, что бы отдать данные для выбранной акции
     """
     serializer_class = MarketplaceActionSerializer
     permission_classes = [IsAuthenticated]
@@ -604,6 +612,112 @@ class MarketplaceActionListView(ListAPIView):
         queryset = queryset.order_by('platform_id', 'action_name')
 
         return queryset
+    def post(self, request, *args, **kwargs):
+        today = timezone.now().date()
+        product_ids = request.data.get('product_ids')
+        action_id = request.data.get('action_id')
+
+        if not product_ids:
+            return Response({"detail": "Нужно id товаров"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product_ids = [int(pid) for pid in product_ids]
+        except ValueError:
+            return Response({"detail": "Не верный формат"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Получаем ID акций, содержащих указанные товары
+        actions_ids = MarketplaceProductInAction.objects.filter(
+            marketplace_product__id__in=product_ids
+        ).values_list('action_id', flat=True).distinct()
+
+        # Фильтруем акции, которые еще не закончились и имеют указанные ID
+        actions = MarketplaceAction.objects.filter(
+            id__in=actions_ids,
+            date_finish__gt=today
+        ).prefetch_related('account__platform')  # Здесь добавляем правильные связи
+        if action_id:
+            actions = actions.filter(id=action_id)
+        filtered_actions = []
+        for action in actions:
+            filtered_products = action.action.filter(marketplace_product__id__in=product_ids)
+            if filtered_products.exists():
+                action_data = {
+                    'platform': action.platform.id,
+                    'account': action.account.id,
+                    'action_number': action.action_number,
+                    'action_name': action.action_name,
+                    'date_start': action.date_start,
+                    'date_finish': action.date_finish,
+                    'products': MarketplaceProductInActionSerializer(filtered_products, many=True).data
+                }
+                filtered_actions.append(action_data)
+
+        return Response(filtered_actions)
+
+# class MarketplaceActionListView(ListAPIView):
+#     """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
+#         + параметр название акции action_name и отдаёт отсортированные данные по платформе.
+#         /marketplace-actions/?product_ids=1,2,3
+#     """
+#     serializer_class = MarketplaceActionSerializer
+#     permission_classes = [IsAuthenticated]
+#
+#     def get(self, request, *args, **kwargs):
+#         # Получаем текущую дату
+#         today = timezone.now().date()
+#         # Получаем список ID товаров от фронта
+#         product_ids = request.query_params.get('product_ids')
+#         if not product_ids:
+#             return Response({"detail": "Нужно id товаров"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         try:
+#             product_ids = list(map(int, product_ids.split(',')))
+#         except ValueError:
+#             return Response({"detail": "Не верный формат"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         # Получаем ID акций, содержащих указанные товары
+#         actions_ids = MarketplaceProductInAction.objects.filter(
+#             marketplace_product__id__in=product_ids   #,status=True  # Надо ли товары учасвствующие в акции?
+#         ).values_list('action_id', flat=True).distinct()
+#
+#         # Фильтруем акции, которые еще не закончились и имеют указанные ID
+#         actions = MarketplaceAction.objects.filter(
+#             id__in=actions_ids,
+#             date_finish__gt=today
+#         )
+#
+#         # Сериализация и возврат данных
+#         serializer = self.serializer_class(actions, many=True)
+#         return Response(serializer.data)
+
+
+class CalculateMPPriceView(APIView):
+    """
+    Эндпоинт для расчета цены товара на маркетплейсе на основе рентабельности.
+
+    Входящие данные (в теле POST-запроса):
+        incoming_profitability: float - входящая рентабельность с которой сравниваем рентабельность из БД
+        product_ids: list - список ID товаров, которые находятся на странице
+
+    Возвращает:
+        Список объектов модели MarketplaceProduct с обновленными ценами.
+    """
+    def post(self, request, *args, **kwargs):
+        incoming_profitability = request.data.get('incoming_profitability')
+        product_ids = request.data.get('product_ids')
+
+        if not incoming_profitability or not product_ids:
+            return Response({"detail": "Нужно указать входящую рентабельность и список ID товаров"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product_ids = [int(pid) for pid in product_ids]
+        except ValueError:
+            return Response({"detail": "Не верный формат ID товаров"}, status=status.HTTP_400_BAD_REQUEST)
+
+        mp_products_list = calculate_mp_price_with_incoming_profitability(incoming_profitability, product_ids)
+
+        serializer = MarketplaceProductSerializer(mp_products_list, many=True)
+        return Response(serializer.data)
 
 
 class MarketplaceProductPriceWithProfitabilityViewSet(viewsets.ReadOnlyModelViewSet):
