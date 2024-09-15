@@ -71,9 +71,10 @@ def wb_article_data_from_api(TOKEN_WB, update_date=None, mn_id=0, common_data=No
         # bot.send_message(chat_id=CHAT_ID_ADMIN, text=message)
 
 
-def wb_price_data_from_api(TOKEN_WB, limit=1000, offset='', common_data=[], counter=0):
+def wb_price_data_from_api(TOKEN_WB, limit=1000, offset='', common_data=None, counter=0):
     """Получаем данные с ценой и скидкой всех артикулов в ВБ"""
-
+    if not common_data:
+        common_data = []
     url = f'https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit={limit}&offset={offset}'
 
     headers = {

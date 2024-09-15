@@ -79,11 +79,9 @@ def ozon_comission_logistic_add_data_to_db():
 
                         cost_logistic_fbo = comissions_data['fbo_deliv_to_customer_amount'] + \
                             comissions_data['fbo_fulfillment_amount'] + \
-                            comissions_data['fbo_direct_flow_trans_max_amount'] * \
-                            oz_price / 100
+                            comissions_data['fbo_direct_flow_trans_max_amount']
                         cost_logistic_fbs = comissions_data['fbs_deliv_to_customer_amount'] + \
-                            comissions_data['fbs_direct_flow_trans_max_amount'] * \
-                            oz_price / 100
+                            comissions_data['fbs_direct_flow_trans_max_amount']
 
                         add_marketplace_logistic_to_db(
                             product_obj, cost_logistic_fbo=cost_logistic_fbo, cost_logistic_fbs=cost_logistic_fbs)
@@ -97,6 +95,8 @@ def ozon_comission_logistic_add_data_to_db():
 def ozon_products_data_to_db():
     """Записывает данные о продуктах OZON в базу данных"""
     users = User.objects.all()
+    platform = Platform.objects.get(
+        platform_type=MarketplaceChoices.OZON)
     for user in users:
         if Account.objects.filter(
             user=user,
@@ -110,24 +110,28 @@ def ozon_products_data_to_db():
             )
             accounts_ozon = Account.objects.filter(
                 user=user,
-                platform=Platform.objects.get(
-                    platform_type=MarketplaceChoices.OZON)
+                platform=platform
             )
             for account in accounts_ozon:
+                ozon_token = ''
+                ozon_client_id = ''
                 ozon_token = account.authorization_fields['token']
                 ozon_client_id = account.authorization_fields['client_id']
                 main_data = ozon_products_info_from_api(
                     ozon_token, ozon_client_id)
                 for data in main_data:
                     ozonsku = ''
+                    sku = ''
+                    barcode = ''
                     article_info = ozon_product_info_with_sku_data(
                         ozon_token, ozon_client_id, data['id'])
                     if article_info:
                         ozonsku = article_info.get('sku', '')
                         if not ozonsku:
                             ozonsku = article_info.get('fbo_sku', '')
-                    platform = Platform.objects.get(
-                        platform_type=MarketplaceChoices.OZON)
+                        if not ozonsku:
+                            ozonsku = article_info.get('fbs_sku', '')
+
                     name = data['name']
                     sku = data['id']
                     seller_article = data['offer_id']
@@ -138,7 +142,6 @@ def ozon_products_data_to_db():
                     height = data['height']/10
                     length = data['depth']/10
                     weight = data['weight']/1000
-
                     add_marketplace_product_to_db(
                         account_sklad, barcode,
                         account, platform, name,

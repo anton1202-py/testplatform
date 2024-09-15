@@ -19,7 +19,7 @@ from unit_economics.serializers import ProductPriceSerializer
 logger = logging.getLogger(__name__)
 
 
-def ozon_article_list_from_api(TOKEN_OZON, CLEINTID, limit=1000, last_id='', common_data=[]):
+def ozon_article_list_from_api(TOKEN_OZON, CLEINTID, limit=1000, last_id='', common_data=None):
     """
     Получаем список всех артикулов OZON
 
@@ -30,7 +30,8 @@ def ozon_article_list_from_api(TOKEN_OZON, CLEINTID, limit=1000, last_id='', com
         last_id - для работы с пагинацией, если число товаров в ответе равно лимиту
         common_data - список для всех артикулов, включая работающую пагинацию
     """
-
+    if not common_data:
+        common_data = []
     url = 'https://api-seller.ozon.ru/v2/product/list'
     payload = json.dumps(
         {
@@ -94,7 +95,7 @@ def ozon_article_info_from_api(TOKEN_OZON, CLEINTID, product_id):
         # bot.send_message(chat_id=CHAT_ID_ADMIN, text=message)
 
 
-def ozon_products_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_id='', common_data=[]):
+def ozon_products_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_id='', common_data=None):
     """
     Получаем список всех артикулов OZON
 
@@ -105,6 +106,8 @@ def ozon_products_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_id='', com
         last_id - для работы с пагинацией, если число товаров в ответе равно лимиту
         common_data - список для всех артикулов, включая работающую пагинацию
     """
+    if not common_data:
+        common_data = []
 
     url = 'https://api-seller.ozon.ru/v3/products/info/attributes'
     payload = json.dumps(
@@ -168,7 +171,7 @@ def ozon_product_info_with_sku_data(token_ozon, ozon_id, product_id):
         message = f'статус код {response.status_code} у {api_url}. {response.text}'
 
 
-def ozon_products_comission_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_id='', common_data=[]):
+def ozon_products_comission_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_id='', common_data=None):
     """
     Получаем список всех артикулов OZON с информацией о комиссиях
 
@@ -179,7 +182,8 @@ def ozon_products_comission_info_from_api(TOKEN_OZON, OZON_ID, limit=1000, last_
         last_id - для работы с пагинацией, если число товаров в ответе равно лимиту
         common_data - список для всех артикулов, включая работающую пагинацию
     """
-
+    if not common_data:
+        common_data = []
     url = 'https://api-seller.ozon.ru/v4/product/info/prices'
     payload = json.dumps(
         {

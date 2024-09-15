@@ -115,7 +115,8 @@ def moy_sklad_add_data_to_db():
                         cost_price = None
                 else:
                     cost_price = None
-
+                if item.get('id') == '3760b19d-c681-11ee-0a80-07ae00135d9f':
+                    print('cost_price', cost_price / 100)
                 product_info = {
                     'account': account,
                     'moy_sklad_product_number': item.get('id', ''),
@@ -173,7 +174,7 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
             if price_account in OZON_ACCOUNT_NAME:
                 if OZON_ACCOUNT_NAME[price_account] in accounts_names:
                     difficult_price_data[OZON_ACCOUNT_NAME[price_account]
-                                         ] = data['value']
+                                         ] = data['value']/100
     search_params = {'product': product_obj}
     values_for_update = {
         "wb_price": wb_price,
@@ -187,7 +188,7 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
         search_params = {'product': product_obj,
                          'account': Account.objects.get(name=account_name)}
         values_for_update = {
-            "ozon_price": price/100
+            "ozon_price": price
         }
         ProductOzonPrice.objects.update_or_create(
             defaults=values_for_update, **search_params

@@ -81,8 +81,11 @@ def yandex_comission_calculate(TOKEN_YM: str, logistic_type: str, offers_list: l
         },
         "offers": offers_list
     })
+
     response = requests.request("POST", api_url, headers=headers, data=payload)
+
     if response.status_code != 200:
+        print(payload)
         print('response.status_code', response.text)
     if response.status_code == 200:
         main_data = response.json().get('result', [])

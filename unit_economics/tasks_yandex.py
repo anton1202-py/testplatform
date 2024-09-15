@@ -88,6 +88,14 @@ def yandex_add_products_data_to_db():
                                         width = product_data['weightDimensions']['width']
                                         height = product_data['weightDimensions']['height']
                                         length = product_data['weightDimensions']['length']
+
+                                        if width == 0:
+                                            width = 20
+                                        if height == 0:
+                                            height = 20
+                                        if length == 0:
+                                            length = 20
+
                                         if 'weight' in product_data['weightDimensions']:
                                             weight = product_data['weightDimensions']['weight']
                                     add_marketplace_product_to_db(
@@ -149,7 +157,6 @@ def yandex_comission_logistic_add_data_to_db():
                     comission_data = yandex_comission_calculate(
                         token_ya, logistic_type, request_data)
                     for comission in comission_data:
-
                         article_data = comission['offer']
                         product_objects = MarketplaceProduct.objects.filter(
                             account=account,

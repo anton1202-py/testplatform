@@ -19,7 +19,7 @@ from unit_economics.serializers import ProductPriceSerializer
 logger = logging.getLogger(__name__)
 
 
-def moy_sklad_assortment(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_list=[]):
+def moy_sklad_assortment(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_list=None):
     """
     Достает список всех товаров с учетной записи в моем складе
 
@@ -29,6 +29,8 @@ def moy_sklad_assortment(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_li
         iter_numb=0 - Счетчик вызовов метода
         products_data_list=[] - список с данными всех продуктов
     """
+    if not products_data_list:
+        products_data_list = []
     limit = 100  # Количество товаров за один запрос
     api_url = f"https://api.moysklad.ru/api/remap/1.2/entity/assortment?limit={limit}&offset={offset}&filter=archived=false;type=product;type=bundle"
     headers = {
@@ -54,7 +56,7 @@ def moy_sklad_assortment(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_li
         print(message)
 
 
-def moy_sklad_enter(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_list=[]):
+def moy_sklad_enter(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_list=None):
     """
     Достает список оприходований товаров
 
@@ -64,6 +66,8 @@ def moy_sklad_enter(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_list=[]
         iter_numb=0 - Счетчик вызовов метода
         products_data_list=[] - список с данными всех продуктов
     """
+    if not products_data_list:
+        products_data_list = []
     limit = 1000  # Количество товаров за один запрос
     api_url = f"https://api.moysklad.ru/api/remap/1.2/entity/enter?limit={limit}&offset={offset}"
     headers = {
@@ -182,7 +186,6 @@ def change_product_price(TOKEN_MY_SKLAD, platform, account_name, new_price, prod
     }
     response = requests.get(url=api_url, headers=headers)
     salePrices = response.json()['salePrices']
-    print(salePrices)
 
     for sp in salePrices:
         if platform != 'OZON':
