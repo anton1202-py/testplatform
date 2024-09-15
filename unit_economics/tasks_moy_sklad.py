@@ -317,12 +317,13 @@ def moy_sklad_stock_data():
         stocks_list = get_stock_info(token_ms)
         stocks_data = {}
         for stock_data in stocks_list:
-            code = stock_data['code']
-            if 'stock' in stock_data:
-                stock = stock_data['stock']
-            else:
-                stock = 0
-            stocks_data[code] = stock
+            if 'code' in stock_data:
+                code = stock_data['code']
+                if 'stock' in stock_data:
+                    stock = stock_data['stock']
+                else:
+                    stock = 0
+                stocks_data[code] = stock
         main_retuned_dict[account] = stocks_data
     return main_retuned_dict
 

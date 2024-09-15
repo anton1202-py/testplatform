@@ -220,12 +220,12 @@ class TopSelectorsViewSet(GenericAPIView):
             brands = top_selection_brand.split(',')
             goods_data = goods_data.filter(brand__in=brands)
 
-        # if top_selection_product_name:
-        #     products_list = top_selection_product_name.split(',')
-        #     queryset = queryset.filter(
-        #         mp_product__product__id__in=products_list)
-        #     product_situations = product_situations.filter(
-        #         id__in=products_list)
+        if top_selection_product_name:
+            products_list = top_selection_product_name.split(',')
+            queryset = queryset.filter(
+                mp_product__product__id__in=products_list)
+            product_situations = product_situations.filter(
+                id__in=products_list)
 
         try:
 
@@ -443,7 +443,7 @@ class ProfitabilityAPIView(GenericAPIView):
         POST-запрос для обновления накладных расходов и пересчета рентабельности.
         Входящие данные:
         mp_product_dict: словарь типа {mp_product_id: product_overheads}
-        mp_product_id - id продлукта из таблицы MarketplaceProduct
+        mp_product_id - id продукта из таблицы MarketplaceProduct
         product_overheads - накладные расходы в формате float (например 0.2)
         """
         overheads_data = request.data.get('overheads_data', {})

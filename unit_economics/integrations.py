@@ -264,24 +264,11 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None):
                     overheads = overheads
                 profit = round((price - float(product_cost_price) -
                                 logistic_cost - comission - (overheads * price)), 2)
-                print(product, 'profit', profit, 'price', price,
-                      'product_cost_price', product_cost_price, 'logistic_cost', logistic_cost, 'comission', comission,  product.platform)
+                # print(product, 'profit', profit, 'price', price,
+                #       'product_cost_price', product_cost_price, 'logistic_cost', logistic_cost, 'comission', comission,  product.platform)
                 profitability = round(((profit / price) * 100), 2)
 
                 # Добавляем фильтрацию по группе рентабельности
-                if profitability_group:
-                    if profitability_group == 'count_above_20' and profitability > 20:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_10_and_20' and 10 < profitability <= 20:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_0_and_10' and 0 < profitability <= 10:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_0_and_minus_10' and -10 < profitability <= 0:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_between_minus10_and_minus_20' and -20 < profitability <= -10:
-                        filtered_products.append(product)
-                    elif profitability_group == 'count_below_minus_20' and profitability <= -20:
-                        filtered_products.append(product)
 
                 values_for_update = {
                     "profit": profit,
@@ -319,8 +306,26 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None):
             profitability__lte=-10) & Q(profitability__gt=-20)),
         count_below_minus_20=Count('id', filter=Q(profitability__lte=-20)),
     )
-
     if profitability_group:
+        mp_products_list = MarketplaceProduct.objects.filter(
+            account__user=user)
+        for product in mp_products_list:
+            if ProfitabilityMarketplaceProduct.objects.filter(
+                    mp_product=product).exists():
+                profitability = ProfitabilityMarketplaceProduct.objects.get(
+                    mp_product=product).profitability
+                if profitability_group == 'count_above_20' and profitability > 20:
+                    filtered_products.append(product)
+                elif profitability_group == 'count_between_10_and_20' and 10 < profitability <= 20:
+                    filtered_products.append(product)
+                elif profitability_group == 'count_between_0_and_10' and 0 < profitability <= 10:
+                    filtered_products.append(product)
+                elif profitability_group == 'count_between_0_and_minus_10' and -10 < profitability <= 0:
+                    filtered_products.append(product)
+                elif profitability_group == 'count_between_minus10_and_minus_20' and -20 < profitability <= -10:
+                    filtered_products.append(product)
+                elif profitability_group == 'count_below_minus_20' and profitability <= -20:
+                    filtered_products.append(product)
         result['filtered_products'] = filtered_products
 
     return result
