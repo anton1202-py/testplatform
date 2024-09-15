@@ -316,7 +316,6 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         table_brand = self.request.query_params.get('table_brand')
 
         filter_platform_id = ''
-        table_brand = ''
 
         # В приоритете верхние фильтры
         if top_selection_platform_id:
