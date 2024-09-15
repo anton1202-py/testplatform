@@ -2,7 +2,7 @@ import logging
 
 import requests
 from django.db import transaction
-from django.db.models import Count, Q, Prefetch
+from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -18,25 +18,26 @@ from analyticalplatform.settings import (OZON_ID, TOKEN_MY_SKLAD, TOKEN_OZON,
 from api_requests.moy_sklad import change_product_price
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
-from unit_economics.integrations import (calculate_mp_price_with_profitability,
-                                         profitability_calculate,
-                                         save_overheds_for_mp_product,
-                                         update_price_info_from_user_request,
-                                         calculate_mp_price_with_incoming_profitability)
+from unit_economics.integrations import (
+    calculate_mp_price_with_incoming_profitability,
+    calculate_mp_price_with_profitability, profitability_calculate,
+    save_overheds_for_mp_product, update_price_info_from_user_request)
 from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
                                    MarketplaceProduct,
+                                   MarketplaceProductInAction,
                                    MarketplaceProductPriceWithProfitability,
                                    ProductPrice,
-                                   ProfitabilityMarketplaceProduct, MarketplaceProductInAction)
+                                   ProfitabilityMarketplaceProduct)
 from unit_economics.periodic_tasks import (action_article_price_to_db,
                                            moy_sklad_costprice_add_to_db)
 from unit_economics.serializers import (
     AccountSelectSerializer, AccountSerializer, BrandSerializer,
     MarketplaceActionSerializer, MarketplaceCommissionSerializer,
+    MarketplaceProductInActionSerializer,
     MarketplaceProductPriceWithProfitabilitySerializer,
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
     ProductPriceSelectSerializer, ProductPriceSerializer,
-    ProfitabilityMarketplaceProductSerializer, MarketplaceProductInActionSerializer)
+    ProfitabilityMarketplaceProductSerializer)
 from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -110,13 +111,13 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
 
         # change_product_price(TOKEN_MY_SKLAD)
         moy_sklad_add_data_to_db()
-        wb_products_data_to_db()
-        wb_logistic_add_to_db()
-        wb_comission_add_to_db()
-        ozon_products_data_to_db()
-        ozon_comission_logistic_add_data_to_db()
-        yandex_add_products_data_to_db()
-        yandex_comission_logistic_add_data_to_db()
+        # wb_products_data_to_db()
+        # wb_logistic_add_to_db()
+        # wb_comission_add_to_db()
+        # ozon_products_data_to_db()
+        # ozon_comission_logistic_add_data_to_db()
+        # yandex_add_products_data_to_db()
+        # yandex_comission_logistic_add_data_to_db()
         profitability_calculate(user_id=user.id)
         moy_sklad_costprice_add_to_db()
         calculate_mp_price_with_profitability(user.id)
@@ -297,7 +298,8 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = MarketplaceProduct.objects.filter(account__user=user).select_related('mp_product_profit_price')
+        queryset = MarketplaceProduct.objects.filter(
+            account__user=user).select_related('mp_product_profit_price')
 
         top_selection_platform_id = self.request.query_params.get(
             'top_selection_platform_id')
@@ -334,7 +336,8 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Добавляем prefetch_related для акции
         queryset = queryset.prefetch_related(
-            Prefetch('product_in_action', queryset=MarketplaceProductInAction.objects.select_related('action'))
+            Prefetch('product_in_action',
+                     queryset=MarketplaceProductInAction.objects.select_related('action'))
         )
         return queryset
 
@@ -612,6 +615,7 @@ class MarketplaceActionListView(APIView):
         queryset = queryset.order_by('platform_id', 'action_name')
 
         return queryset
+
     def post(self, request, *args, **kwargs):
         today = timezone.now().date()
         product_ids = request.data.get('product_ids')
@@ -639,7 +643,8 @@ class MarketplaceActionListView(APIView):
             actions = actions.filter(id=action_id)
         filtered_actions = []
         for action in actions:
-            filtered_products = action.action.filter(marketplace_product__id__in=product_ids)
+            filtered_products = action.action.filter(
+                marketplace_product__id__in=product_ids)
             if filtered_products.exists():
                 action_data = {
                     'platform': action.platform.id,
@@ -702,6 +707,7 @@ class CalculateMPPriceView(APIView):
     Возвращает:
         Список объектов модели MarketplaceProduct с обновленными ценами.
     """
+
     def post(self, request, *args, **kwargs):
         incoming_profitability = request.data.get('incoming_profitability')
         product_ids = request.data.get('product_ids')
@@ -714,7 +720,8 @@ class CalculateMPPriceView(APIView):
         except ValueError:
             return Response({"detail": "Не верный формат ID товаров"}, status=status.HTTP_400_BAD_REQUEST)
 
-        mp_products_list = calculate_mp_price_with_incoming_profitability(incoming_profitability, product_ids)
+        mp_products_list = calculate_mp_price_with_incoming_profitability(
+            incoming_profitability, product_ids)
 
         serializer = MarketplaceProductSerializer(mp_products_list, many=True)
         return Response(serializer.data)

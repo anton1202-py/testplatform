@@ -115,8 +115,7 @@ def moy_sklad_add_data_to_db():
                         cost_price = None
                 else:
                     cost_price = None
-                if item.get('id') == '3760b19d-c681-11ee-0a80-07ae00135d9f':
-                    print('cost_price', cost_price / 100)
+                common_cost_price = cost_price/100
                 product_info = {
                     'account': account,
                     'moy_sklad_product_number': item.get('id', ''),
@@ -125,7 +124,7 @@ def moy_sklad_add_data_to_db():
                     'vendor': item.get('article', ''),
                     'barcode': [list(barcode.values())[0] for barcode in item.get('barcodes', [])],
                     'product_type': item['meta'].get('type'),
-                    'cost_price': cost_price / 100,
+                    'cost_price': common_cost_price,
                     'price_info': item['salePrices'],
                     'image_filename': image_filename,
                     'image_content': image_content
@@ -319,7 +318,10 @@ def moy_sklad_stock_data():
         stocks_data = {}
         for stock_data in stocks_list:
             code = stock_data['code']
-            stock = stock_data['stock']
+            if 'stock' in stock_data:
+                stock = stock_data['stock']
+            else:
+                stock = 0
             stocks_data[code] = stock
         main_retuned_dict[account] = stocks_data
     return main_retuned_dict
