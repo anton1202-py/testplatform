@@ -204,8 +204,6 @@ class TopSelectorsViewSet(GenericAPIView):
         # В приоритете верхние фильтры
         if top_selection_platform_id:
             platforms_list = top_selection_platform_id.split(',')
-            platforms_data = platforms_data.filter(
-                Q(id__in=platforms_list))
             accounts_data = accounts_data.filter(
                 platform__id__in=platforms_list)
             goods_data = goods_data.filter(

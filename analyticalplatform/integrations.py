@@ -4,7 +4,8 @@ from core.enums import FieldsTypes
 class BaseIntegration:
 
     MASS_OPERATIONS_BATCH_SIZE = 100
-    auth_fields_description = {"token": {"name": "Токен", "type": FieldsTypes.TEXT, "max_length": 255}}
+    auth_fields_description = {
+        "token": {"name": "Токен", "type": FieldsTypes.TEXT, "max_length": 255}}
 
     def get_object_available_fields(self) -> dict:
         raise NotImplementedError
@@ -17,7 +18,7 @@ class BaseIntegration:
         for i in range(create_batches_count):
             model.objects.bulk_create(
                 objects_list[
-                    (0 + i * self.MASS_OPERATIONS_BATCH_SIZE) : (
+                    (0 + i * self.MASS_OPERATIONS_BATCH_SIZE): (
                         self.MASS_OPERATIONS_BATCH_SIZE + i * self.MASS_OPERATIONS_BATCH_SIZE
                     )
                 ]
@@ -31,7 +32,7 @@ class BaseIntegration:
         for i in range(update_batches_count):
             model.objects.bulk_update(
                 objects_list[
-                    (0 + i * self.MASS_OPERATIONS_BATCH_SIZE) : (
+                    (0 + i * self.MASS_OPERATIONS_BATCH_SIZE): (
                         self.MASS_OPERATIONS_BATCH_SIZE + i * self.MASS_OPERATIONS_BATCH_SIZE
                     )
                 ],
