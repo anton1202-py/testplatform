@@ -1,0 +1,308 @@
+Sep 09 14:07:21 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:07:21 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:07:21 3445859-fi72193.twc1.net systemd[9316]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed to determine user credentials: No such process[0m
+Sep 09 14:07:21 3445859-fi72193.twc1.net systemd[9316]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step USER spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such process[0m
+Sep 09 14:07:21 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=217/USER[0m
+Sep 09 14:07:21 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:08:39 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:08:39 3445859-fi72193.twc1.net systemd[9336]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed to determine user credentials: No such process[0m
+Sep 09 14:08:39 3445859-fi72193.twc1.net systemd[9336]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step USER spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such process[0m
+Sep 09 14:08:39 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=217/USER[0m
+Sep 09 14:08:39 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:08:46 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:08:47 3445859-fi72193.twc1.net systemd[9398]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 14:08:47 3445859-fi72193.twc1.net systemd[9398]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:08:47 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:08:47 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 14:08:47 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:10:15 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:10:18 3445859-fi72193.twc1.net systemd[9461]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 14:10:18 3445859-fi72193.twc1.net systemd[9461]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:10:18 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:10:18 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 14:10:18 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:14:11 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:14:14 3445859-fi72193.twc1.net systemd[9524]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Changing to the requested working directory failed: No such file or directory[0m
+Sep 09 14:14:14 3445859-fi72193.twc1.net systemd[9524]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step CHDIR spawning /root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:14:14 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:14:14 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=200/CHDIR[0m
+Sep 09 14:14:14 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:17:10 3445859-fi72193.twc1.net systemd[9554]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Changing to the requested working directory failed: No such file or directory[0m
+Sep 09 14:17:10 3445859-fi72193.twc1.net systemd[9554]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step CHDIR spawning /root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:17:10 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:17:10 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=200/CHDIR[0m
+Sep 09 14:17:10 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:25:25 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:25:27 3445859-fi72193.twc1.net systemd[9650]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Changing to the requested working directory failed: No such file or directory[0m
+Sep 09 14:25:27 3445859-fi72193.twc1.net systemd[9650]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step CHDIR spawning /root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:25:27 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:25:27 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=200/CHDIR[0m
+Sep 09 14:25:27 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:32:15 3445859-fi72193.twc1.net systemd[9791]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Changing to the requested working directory failed: No such file or directory[0m
+Sep 09 14:32:15 3445859-fi72193.twc1.net systemd[9791]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step CHDIR spawning /root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:32:15 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:32:15 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=200/CHDIR[0m
+Sep 09 14:32:15 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:32:23 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:32:25 3445859-fi72193.twc1.net systemd[9829]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Changing to the requested working directory failed: No such file or directory[0m
+Sep 09 14:32:25 3445859-fi72193.twc1.net systemd[9829]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step CHDIR spawning /root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:32:25 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:32:25 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=200/CHDIR[0m
+Sep 09 14:32:25 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:33:15 3445859-fi72193.twc1.net systemd[1]: [0;1;31m[0;1;39m[0;1;31m/etc/systemd/system/gunicorn.service:20: Neither a valid executable name nor an absolute path: home/root/analyticalplatform/venv/bin/gunicorn[0m
+Sep 09 14:33:15 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Unit configuration has fatal error, unit will not be started.[0m
+Sep 09 14:33:53 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:33:55 3445859-fi72193.twc1.net systemd[9921]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 14:33:55 3445859-fi72193.twc1.net systemd[9921]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:33:55 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:33:55 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 14:33:55 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:41:50 3445859-fi72193.twc1.net systemd[10001]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 14:41:50 3445859-fi72193.twc1.net systemd[10001]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:41:50 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:41:50 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 14:41:50 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 14:41:57 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 14:41:59 3445859-fi72193.twc1.net systemd[10040]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 14:41:59 3445859-fi72193.twc1.net systemd[10040]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 14:41:59 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 14:41:59 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 14:41:59 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:29:38 3445859-fi72193.twc1.net systemd[10602]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 15:29:38 3445859-fi72193.twc1.net systemd[10602]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 15:29:38 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:29:38 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 15:29:38 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:29:45 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:29:47 3445859-fi72193.twc1.net systemd[10640]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 15:29:47 3445859-fi72193.twc1.net systemd[10640]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 15:29:47 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:29:47 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 15:29:47 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:31:08 3445859-fi72193.twc1.net systemd[1]: [0;1;31m[0;1;39m[0;1;31m/etc/systemd/system/gunicorn.service:20: Executable path specifies a directory: /home/root/root/[0m
+Sep 09 15:31:08 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Unit configuration has fatal error, unit will not be started.[0m
+Sep 09 15:31:52 3445859-fi72193.twc1.net systemd[1]: [0;1;31m[0;1;39m[0;1;31m/etc/systemd/system/gunicorn.service:20: Executable path specifies a directory: /home/root/[0m
+Sep 09 15:31:52 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Unit configuration has fatal error, unit will not be started.[0m
+Sep 09 15:32:32 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:32:36 3445859-fi72193.twc1.net systemd[10823]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 15:32:36 3445859-fi72193.twc1.net systemd[10823]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 15:32:36 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:32:36 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 15:32:36 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:35:26 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:35:35 3445859-fi72193.twc1.net systemd[10983]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Changing to the requested working directory failed: No such file or directory[0m
+Sep 09 15:35:35 3445859-fi72193.twc1.net systemd[10983]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step CHDIR spawning /root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 15:35:35 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:35:35 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=200/CHDIR[0m
+Sep 09 15:35:35 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:37:09 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:37:13 3445859-fi72193.twc1.net systemd[11053]: gunicorn.service: Failed to locate executable /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory
+Sep 09 15:37:13 3445859-fi72193.twc1.net systemd[11053]: [0;1;31m[0;1;39m[0;1;31mgunicorn.service: Failed at step EXEC spawning /home/root/analyticalplatform/venv/bin/gunicorn: No such file or directory[0m
+Sep 09 15:37:13 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:37:13 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=203/EXEC[0m
+Sep 09 15:37:13 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:37:55 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:37:58 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:37:58 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:37:58 +0300] [11102] [INFO] Starting gunicorn 23.0.0
+Sep 09 15:37:58 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:37:58 +0300] [11102] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:37:58 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:37:58 +0300] [11102] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:37:59 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:37:59 +0300] [11102] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:37:59 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:37:59 +0300] [11102] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:00 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:38:00 +0300] [11102] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:00 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:38:00 +0300] [11102] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:01 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:38:01 +0300] [11102] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:01 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:38:01 +0300] [11102] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:02 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:38:02 +0300] [11102] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:02 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:38:02 +0300] [11102] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:03 3445859-fi72193.twc1.net gunicorn[11102]: [2024-09-09 15:38:03 +0300] [11102] [ERROR] Can't connect to ('127.0.0.1', 8000)
+Sep 09 15:38:03 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=1/FAILURE[0m
+Sep 09 15:38:03 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:38:18 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:38:18 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:18 +0300] [11112] [INFO] Starting gunicorn 23.0.0
+Sep 09 15:38:18 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:18 +0300] [11112] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:18 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:18 +0300] [11112] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:19 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:19 +0300] [11112] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:19 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:19 +0300] [11112] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:20 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:20 +0300] [11112] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:20 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:20 +0300] [11112] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:21 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:21 +0300] [11112] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:21 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:21 +0300] [11112] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:22 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:22 +0300] [11112] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:22 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:22 +0300] [11112] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:23 3445859-fi72193.twc1.net gunicorn[11112]: [2024-09-09 15:38:23 +0300] [11112] [ERROR] Can't connect to ('127.0.0.1', 8000)
+Sep 09 15:38:23 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=1/FAILURE[0m
+Sep 09 15:38:23 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:38:35 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:38:35 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:35 +0300] [11128] [INFO] Starting gunicorn 23.0.0
+Sep 09 15:38:35 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:35 +0300] [11128] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:35 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:35 +0300] [11128] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:36 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:36 +0300] [11128] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:36 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:36 +0300] [11128] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:37 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:37 +0300] [11128] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:37 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:37 +0300] [11128] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:38 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:38 +0300] [11128] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:38 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:38 +0300] [11128] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:39 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:39 +0300] [11128] [ERROR] Connection in use: ('127.0.0.1', 8000)
+Sep 09 15:38:39 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:39 +0300] [11128] [ERROR] connection to ('127.0.0.1', 8000) failed: [Errno 98] Address already in use
+Sep 09 15:38:40 3445859-fi72193.twc1.net gunicorn[11128]: [2024-09-09 15:38:40 +0300] [11128] [ERROR] Can't connect to ('127.0.0.1', 8000)
+Sep 09 15:38:40 3445859-fi72193.twc1.net systemd[1]: [0;1;39m[0;1;31m[0;1;39mgunicorn.service: Main process exited, code=exited, status=1/FAILURE[0m
+Sep 09 15:38:40 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mgunicorn.service: Failed with result 'exit-code'.[0m
+Sep 09 15:40:19 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:40:19 3445859-fi72193.twc1.net gunicorn[11153]: [2024-09-09 15:40:19 +0300] [11153] [INFO] Starting gunicorn 23.0.0
+Sep 09 15:40:19 3445859-fi72193.twc1.net gunicorn[11153]: [2024-09-09 15:40:19 +0300] [11153] [INFO] Listening at: http://127.0.0.1:8000 (11153)
+Sep 09 15:40:19 3445859-fi72193.twc1.net gunicorn[11153]: [2024-09-09 15:40:19 +0300] [11153] [INFO] Using worker: sync
+Sep 09 15:40:19 3445859-fi72193.twc1.net gunicorn[11154]: [2024-09-09 15:40:19 +0300] [11154] [INFO] Booting worker with pid: 11154
+Sep 09 15:43:35 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:43:36 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:43:36 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:47:56 3445859-fi72193.twc1.net gunicorn[11153]: [2024-09-09 15:47:56 +0300] [11153] [INFO] Handling signal: term
+Sep 09 15:47:56 3445859-fi72193.twc1.net systemd[1]: Stopping gunicorn daemon...
+Sep 09 15:47:56 3445859-fi72193.twc1.net gunicorn[11154]: [2024-09-09 15:47:56 +0300] [11154] [INFO] Worker exiting (pid: 11154)
+Sep 09 15:47:56 3445859-fi72193.twc1.net gunicorn[11153]: [2024-09-09 15:47:56 +0300] [11153] [ERROR] Worker (pid:11154) was sent SIGTERM!
+Sep 09 15:47:56 3445859-fi72193.twc1.net gunicorn[11153]: [2024-09-09 15:47:56 +0300] [11153] [INFO] Shutting down: Master
+Sep 09 15:47:57 3445859-fi72193.twc1.net systemd[1]: gunicorn.service: Deactivated successfully.
+Sep 09 15:47:57 3445859-fi72193.twc1.net systemd[1]: Stopped gunicorn daemon.
+Sep 09 15:47:57 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:47:57 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:49:41 3445859-fi72193.twc1.net systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185m/etc/systemd/system/gunicorn.service:22: Unknown key name 'WantedBy' in section 'Service', ignoring.[0m
+Sep 09 15:49:41 3445859-fi72193.twc1.net systemd[1]: Started gunicorn daemon.
+Sep 09 15:49:41 3445859-fi72193.twc1.net gunicorn[11889]: [2024-09-09 15:49:41 +0300] [11889] [INFO] Starting gunicorn 23.0.0
+Sep 09 15:49:41 3445859-fi72193.twc1.net gunicorn[11889]: [2024-09-09 15:49:41 +0300] [11889] [INFO] Listening at: http://0.0.0.0:8000 (11889)
+Sep 09 15:49:41 3445859-fi72193.twc1.net gunicorn[11889]: [2024-09-09 15:49:41 +0300] [11889] [INFO] Using worker: sync
+Sep 09 15:49:41 3445859-fi72193.twc1.net gunicorn[11890]: [2024-09-09 15:49:41 +0300] [11890] [INFO] Booting worker with pid: 11890
+Sep 09 15:53:00 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /
+Sep 09 15:53:00 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /favicon.ico
+Sep 09 15:56:56 3445859-fi72193.twc1.net gunicorn[11890]: Forbidden: /api/unit_economics/marketplace-products/
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/css/bootstrap.min.css
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/css/bootstrap-tweaks.css
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/css/prettify.css
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/css/default.css
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/js/jquery-3.7.1.min.js
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/js/ajax-form.js
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/js/csrf.js
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/js/bootstrap.min.js
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/js/prettify-min.js
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/js/default.js
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /django-static/rest_framework/js/load-ajax-form.js
+Sep 09 15:56:57 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /favicon.ico
+Sep 09 17:58:55 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /
+Sep 09 17:58:55 3445859-fi72193.twc1.net gunicorn[11890]: Not Found: /favicon.ico
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/core/views.py: Warning [AccountsViewSet]: Failed to obtain model through view's queryset due to raised exception. Prevent this either by setting "queryset = Model.objects.none()" on the view, checking for "getattr(self, "swagger_fake_view", False)" in get_queryset() or by simply using @extend_schema. (Exception: Field 'id' expected a number but got <django.contrib.auth.models.AnonymousUser object at 0x7fa06cb48d40>.)
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/core/views.py: Error [ExportReportAPIView]: unable to guess serializer. This is graceful fallback handling for APIViews. Consider using GenericAPIView as view base class, if view is under your control. Either way you may want to add a serializer_class (or method). Ignoring view for now.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/views.py: Error [GetOrdersCounts]: unable to guess serializer. This is graceful fallback handling for APIViews. Consider using GenericAPIView as view base class, if view is under your control. Either way you may want to add a serializer_class (or method). Ignoring view for now.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/core/views.py: Error [GetMarketplaceTypesAPIView]: unable to guess serializer. This is graceful fallback handling for APIViews. Consider using GenericAPIView as view base class, if view is under your control. Either way you may want to add a serializer_class (or method). Ignoring view for now.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_order_number". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_order_status_name". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_order_status_color". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_platform_name". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_product_name". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_product_brand". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_product_barcode". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_created_dt". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/stock/serializers.py: Warning [OrderItemsViewSet > OrderItemSerializer]: unable to resolve type hint for function "get_shipped_dt". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/core/views.py: Error [GetPlatformAuthFieldsDescriptionAPIView]: unable to guess serializer. This is graceful fallback handling for APIViews. Consider using GenericAPIView as view base class, if view is under your control. Either way you may want to add a serializer_class (or method). Ignoring view for now.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/core/views.py: Warning [ProductViewSet]: Failed to obtain model through view's queryset due to raised exception. Prevent this either by setting "queryset = Model.objects.none()" on the view, checking for "getattr(self, "swagger_fake_view", False)" in get_queryset() or by simply using @extend_schema. (Exception: Field 'id' expected a number but got <django.contrib.auth.models.AnonymousUser object at 0x7fa06cb48d40>.)
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Warning [AccountViewSet]: Failed to obtain model through view's queryset due to raised exception. Prevent this either by setting "queryset = Model.objects.none()" on the view, checking for "getattr(self, "swagger_fake_view", False)" in get_queryset() or by simply using @extend_schema. (Exception: Field 'id' expected a number but got <django.contrib.auth.models.AnonymousUser object at 0x7fa06cb48d40>.)
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Warning [AccountViewSet]: could not derive type of path parameter "id" because it is untyped and obtaining queryset from the viewset failed. Consider adding a type to the path (e.g. <int:id>) or annotating the parameter type with @extend_schema. Defaulting to "string".
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Error [BrandViewSet]: unable to guess serializer. This is graceful fallback handling for APIViews. Consider using GenericAPIView as view base class, if view is under your control. Either way you may want to add a serializer_class (or method). Ignoring view for now.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Warning [MarketplaceProductViewSet]: Failed to obtain model through view's queryset due to raised exception. Prevent this either by setting "queryset = Model.objects.none()" on the view, checking for "getattr(self, "swagger_fake_view", False)" in get_queryset() or by simply using @extend_schema. (Exception: Field 'id' expected a number but got <django.contrib.auth.models.AnonymousUser object at 0x7fa06cb48d40>.)
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/serializers.py: Warning [MarketplaceProductViewSet > MarketplaceProductSerializer]: unable to resolve type hint for function "get_rrc". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/serializers.py: Warning [MarketplaceProductViewSet > MarketplaceProductSerializer]: unable to resolve type hint for function "get_price". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/serializers.py: Warning [MarketplaceProductViewSet > MarketplaceProductSerializer]: unable to resolve type hint for function "get_commission". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/serializers.py: Warning [MarketplaceProductViewSet > MarketplaceProductSerializer]: unable to resolve type hint for function "get_logistic_cost". Consider using a type hint or @extend_schema_field. Defaulting to string.
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Warning [MarketplaceProductViewSet]: could not derive type of path parameter "id" because it is untyped and obtaining queryset from the viewset failed. Consider adding a type to the path (e.g. <int:id>) or annotating the parameter type with @extend_schema. Defaulting to "string".
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Warning [PlatformViewSet]: Failed to obtain model through view's queryset due to raised exception. Prevent this either by setting "queryset = Model.objects.none()" on the view, checking for "getattr(self, "swagger_fake_view", False)" in get_queryset() or by simply using @extend_schema. (Exception: Field 'id' expected a number but got <django.contrib.auth.models.AnonymousUser object at 0x7fa06cb48d40>.)
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Warning [PlatformViewSet]: could not derive type of path parameter "id" because it is untyped and obtaining queryset from the viewset failed. Consider adding a type to the path (e.g. <int:id>) or annotating the parameter type with @extend_schema. Defaulting to "string".
+Sep 09 17:59:24 3445859-fi72193.twc1.net gunicorn[11890]: /root/analyticalplatform/unit_economics/views.py: Error [ProductNameViewSet]: unable to guess serializer. This is graceful fallback handling for APIViews. Consider using GenericAPIView as view base class, if view is under your control. Either way you may want to add a serializer_class (or method). Ignoring view for now.
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11889]: [2024-09-09 18:00:24 +0300] [11889] [CRITICAL] WORKER TIMEOUT (pid:11890)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]: [2024-09-09 18:00:24 +0300] [11890] [ERROR] Error handling request (no URI read)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]: Traceback (most recent call last):
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/workers/sync.py", line 133, in handle
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     req = next(parser)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:           ^^^^^^^^^^^^
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/parser.py", line 41, in __next__
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     self.mesg = self.mesg_class(self.cfg, self.unreader, self.source_addr, self.req_count)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 259, in __init__
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     super().__init__(cfg, unreader, peer_addr)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 60, in __init__
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     unused = self.parse(self.unreader)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:              ^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 271, in parse
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     self.get_data(unreader, buf, stop=True)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 262, in get_data
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     data = unreader.read()
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:            ^^^^^^^^^^^^^^^
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/unreader.py", line 36, in read
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     d = self.chunk()
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:         ^^^^^^^^^^^^
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/unreader.py", line 63, in chunk
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     return self.sock.recv(self.mxchunk)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/workers/base.py", line 204, in handle_abort
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]:     sys.exit(1)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]: SystemExit: 1
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[11890]: [2024-09-09 18:00:24 +0300] [11890] [INFO] Worker exiting (pid: 11890)
+Sep 09 18:00:24 3445859-fi72193.twc1.net gunicorn[13845]: [2024-09-09 18:00:24 +0300] [13845] [INFO] Booting worker with pid: 13845
+Sep 09 19:13:37 3445859-fi72193.twc1.net gunicorn[13845]: Not Found: /
+Sep 09 19:13:37 3445859-fi72193.twc1.net gunicorn[13845]: Not Found: /
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[11889]: [2024-09-09 19:16:33 +0300] [11889] [CRITICAL] WORKER TIMEOUT (pid:13845)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]: [2024-09-09 19:16:33 +0300] [13845] [ERROR] Error handling request (no URI read)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]: Traceback (most recent call last):
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/workers/sync.py", line 133, in handle
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     req = next(parser)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:           ^^^^^^^^^^^^
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/parser.py", line 41, in __next__
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     self.mesg = self.mesg_class(self.cfg, self.unreader, self.source_addr, self.req_count)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 259, in __init__
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     super().__init__(cfg, unreader, peer_addr)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 60, in __init__
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     unused = self.parse(self.unreader)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:              ^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 271, in parse
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     self.get_data(unreader, buf, stop=True)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/message.py", line 262, in get_data
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     data = unreader.read()
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:            ^^^^^^^^^^^^^^^
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/unreader.py", line 36, in read
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     d = self.chunk()
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:         ^^^^^^^^^^^^
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/http/unreader.py", line 63, in chunk
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     return self.sock.recv(self.mxchunk)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:   File "/root/analyticalplatform/venv/lib/python3.12/site-packages/gunicorn/workers/base.py", line 204, in handle_abort
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]:     sys.exit(1)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]: SystemExit: 1
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[13845]: [2024-09-09 19:16:33 +0300] [13845] [INFO] Worker exiting (pid: 13845)
+Sep 09 19:16:33 3445859-fi72193.twc1.net gunicorn[14344]: [2024-09-09 19:16:33 +0300] [14344] [INFO] Booting worker with pid: 14344
+Sep 09 19:33:43 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /api/unit_economics/marketplace-products/ /
+Sep 09 19:33:55 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /api/unit_economics/marketplace-products/ /
+Sep 09 19:35:24 3445859-fi72193.twc1.net gunicorn[14344]: Forbidden: /api/unit_economics/marketplace-products/
+Sep 09 19:35:24 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/bootstrap.min.css
+Sep 09 19:35:24 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/bootstrap-tweaks.css
+Sep 09 19:35:24 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/default.css
+Sep 09 19:35:24 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/prettify.css
+Sep 09 19:35:24 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/jquery-3.7.1.min.js
+Sep 09 19:35:24 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/ajax-form.js
+Sep 09 19:35:25 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/bootstrap.min.js
+Sep 09 19:35:25 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/csrf.js
+Sep 09 19:35:25 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/prettify-min.js
+Sep 09 19:35:25 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/default.js
+Sep 09 19:35:25 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/load-ajax-form.js
+Sep 09 19:35:33 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/bootstrap.min.css
+Sep 09 19:35:33 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/bootstrap-tweaks.css
+Sep 09 19:35:33 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/prettify.css
+Sep 09 19:35:33 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/default.css
+Sep 09 19:35:48 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/bootstrap-tweaks.css
+Sep 09 19:35:48 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/bootstrap.min.css
+Sep 09 19:35:48 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/prettify.css
+Sep 09 19:35:48 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/csrf.js
+Sep 09 19:35:48 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/css/default.css
+Sep 09 19:35:49 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/bootstrap.min.js
+Sep 09 19:35:49 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /django-static/rest_framework/js/default.js
+Sep 09 19:36:15 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /api/unit_economics/marketplace-products/ /
+Sep 09 19:37:40 3445859-fi72193.twc1.net gunicorn[14344]: Not Found: /api/unit_economics/marketplace-products/  /
+Sep 09 19:43:45 3445859-fi72193.twc1.net gunicorn[14344]: Invalid HTTP_HOST header: 'example.com:443'. You may need to add 'example.com' to ALLOWED_HOSTS.
+Sep 09 19:43:45 3445859-fi72193.twc1.net gunicorn[14344]: Traceback (most recent call last):
+Sep 09 19:43:45 3445859-fi72193.twc1.net gunicorn[14344]:   File "/root/analyticalplatform/venv/lib/python3.12/site-pack
