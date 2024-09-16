@@ -204,8 +204,6 @@ class TopSelectorsViewSet(GenericAPIView):
         # В приоритете верхние фильтры
         if top_selection_platform_id:
             platforms_list = top_selection_platform_id.split(',')
-            platforms_data = platforms_data.filter(
-                Q(id__in=platforms_list))
             accounts_data = accounts_data.filter(
                 platform__id__in=platforms_list)
             goods_data = goods_data.filter(
@@ -314,7 +312,9 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         # Повторяющиеся фильтры в верху страницы и вверху таблицы.
         table_platform_id = self.request.query_params.get('table_platform_id')
         table_brand = self.request.query_params.get('table_brand')
+
         filter_platform_id = ''
+
         # В приоритете верхние фильтры
         if top_selection_platform_id:
             filter_platform_id = top_selection_platform_id
@@ -330,6 +330,10 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if top_selection_brand:
             brands = top_selection_brand.split(',')
             queryset = queryset.filter(product__brand__in=brands)
+        elif table_brand:
+            brands = table_brand.split(',')
+            queryset = queryset.filter(product__brand__in=brands)
+
         if top_selection_product_name:
             products_list = top_selection_product_name.split(',')
             queryset = queryset.filter(product__id__in=products_list)
