@@ -255,43 +255,44 @@ def moy_sklad_enters_calculate():
                     api_url = position['assortment']['meta']['href']
                     assortiment_data = get_assortiment_info(
                         token_ms, api_url)
-                    if assortiment_data['archived'] == False:
-                        quantity = position.get('quantity', 0)
-                        price = position.get('price', 0)
-                        overhead = position.get('overhead', 0)
-                        article = assortiment_data['code']
+                    if assortiment_data:
+                        if assortiment_data['archived'] == False:
+                            quantity = position.get('quantity', 0)
+                            price = position.get('price', 0)
+                            overhead = position.get('overhead', 0)
+                            article = assortiment_data['code']
 
-                        if 'barcodes' in assortiment_data:
-                            barcode_list = assortiment_data['barcodes']
-                            for barcode_data in barcode_list:
-                                for key, barcode in barcode_data.items():
-                                    barcodes.append(barcode)
-                        attributes = assortiment_data['attributes']
-                        for attribute in attributes:
-                            if attribute['name'] == 'Бренд':
-                                brand = attribute['value']
+                            if 'barcodes' in assortiment_data:
+                                barcode_list = assortiment_data['barcodes']
+                                for barcode_data in barcode_list:
+                                    for key, barcode in barcode_data.items():
+                                        barcodes.append(barcode)
+                            attributes = assortiment_data['attributes']
+                            for attribute in attributes:
+                                if attribute['name'] == 'Бренд':
+                                    brand = attribute['value']
 
-                        if article not in enter_main_data:
-                            enter_main_data[article] = {
-                                'article_data':
-                                    {
-                                        'barcodes': barcodes,
-                                        'brand': brand
-                                    },
-                                'enter_data': [
-                                    {
-                                        'date': enter_date,
-                                        'price': price,
-                                        'quantity': quantity,
-                                        'overhead': overhead
-                                    }]}
-                        else:
-                            enter_main_data[article]['enter_data'].append({
-                                'date': enter_date,
-                                'price': price,
-                                'quantity': quantity,
-                                'overhead': overhead
-                            })
+                            if article not in enter_main_data:
+                                enter_main_data[article] = {
+                                    'article_data':
+                                        {
+                                            'barcodes': barcodes,
+                                            'brand': brand
+                                        },
+                                    'enter_data': [
+                                        {
+                                            'date': enter_date,
+                                            'price': price,
+                                            'quantity': quantity,
+                                            'overhead': overhead
+                                        }]}
+                            else:
+                                enter_main_data[article]['enter_data'].append({
+                                    'date': enter_date,
+                                    'price': price,
+                                    'quantity': quantity,
+                                    'overhead': overhead
+                                })
             # x -= 1
             # print(x)
         main_retuned_dict[account] = enter_main_data

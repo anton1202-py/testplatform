@@ -134,13 +134,17 @@ def get_assortiment_info(TOKEN_MY_SKLAD, api_url):
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(api_url, headers=headers, timeout=20)
-    if response.status_code == 200:
-        data = response.json()
-        return data
-    else:
-        message = f'Ошибка при вызове метода {api_url}: {response.status_code}. {response.text}'
-        print(message)
+    try:
+        response = requests.get(api_url, headers=headers, timeout=20)
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        else:
+            message = f'Ошибка при вызове метода {api_url}: {response.status_code}. {response.text}'
+            print(message)
+    except requests.exceptions.RequestException as e:
+        print(f"Ошибка при выполнении запроса: {e}")
+        return None
 
 
 def get_stock_info(TOKEN_MY_SKLAD):
