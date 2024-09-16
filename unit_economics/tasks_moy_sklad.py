@@ -239,7 +239,7 @@ def moy_sklad_enters_calculate():
     main_retuned_dict = {}
     for account in accounts_ms:
         token_ms = account.authorization_fields['token']
-        enters_list = moy_sklad_enter(token_ms)[:500]
+        enters_list = moy_sklad_enter(token_ms)
 
         enter_main_data = {}
         # print(len(enters_list))

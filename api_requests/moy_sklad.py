@@ -126,14 +126,15 @@ def get_assortiment_info(TOKEN_MY_SKLAD, api_url):
         TOKEN_MY_SKLAD - токен учетной записи
         api_url - id ссылка для обращения
     """
-    time.sleep(0.3)
+    time.sleep(1)
+    print('api_url', api_url)
     api_url = f'{api_url}'
     headers = {
         'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(api_url, headers=headers)
+    response = requests.get(api_url, headers=headers, timeout=20)
     if response.status_code == 200:
         data = response.json()
         return data
@@ -155,7 +156,7 @@ def get_stock_info(TOKEN_MY_SKLAD):
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(api_url, headers=headers)
+    response = requests.get(api_url, headers=headers, timeout=20)
     if response.status_code == 200:
         data = response.json()
         stocks = data.get('rows', [])
@@ -186,7 +187,7 @@ def change_product_price(TOKEN_MY_SKLAD, platform, account_name, new_price, prod
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(url=api_url, headers=headers)
+    response = requests.get(url=api_url, headers=headers, timeout=20)
     salePrices = response.json()['salePrices']
 
     for sp in salePrices:
@@ -215,7 +216,7 @@ def picture_href_request(token_moy_sklad, api_url):
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(url=api_url, headers=headers)
+    response = requests.get(url=api_url, headers=headers, timeout=20)
     link = ''
     if response.status_code == 200:
         data = response.json()
@@ -241,7 +242,7 @@ def get_picture_from_moy_sklad(token_moy_sklad, api_url):
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(url=api_url, headers=headers)
+    response = requests.get(url=api_url, headers=headers, timeout=20)
 
     if response.status_code == 200:
         # Создаем объект модели

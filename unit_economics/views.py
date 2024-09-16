@@ -52,38 +52,6 @@ from unit_economics.tasks_yandex import (
 logger = logging.getLogger(__name__)
 
 
-# def moysklad_json_token():
-#     """Получение JSON токена"""
-#     BASE_URL = 'https://api.moysklad.ru/api/remap/1.2'
-#     TOKEN = '/security/token/'
-#     url = f'{BASE_URL}{TOKEN}'
-#
-#     # Указываем логин и пароль
-#     username = 'rauhelper@yandex.ru'
-#     password = 'preprod123'
-#
-#     # Кодируем логин и пароль в base64 для заголовка Authorization
-#     auth_str = f'{username}:{password}'
-#     auth_bytes = auth_str.encode('ascii')
-#     auth_base64 = base64.b64encode(auth_bytes).decode('ascii')
-#
-#     payload = {}
-#
-#     # Создаем заголовки для запроса
-#     headers = {
-#         'Authorization': f'Basic {auth_base64}',
-#         'Content-Type': 'application/json'
-#     }
-#
-#     # Выполняем POST запрос
-#     response = requests.request("POST", url, headers=headers, data=payload)
-#
-#     if 200 <= response.status_code < 300:
-#         token = response.json()['access_token']
-#         return token
-#     return None
-
-
 class ProductPriceMSViewSet(viewsets.ViewSet):
     """ViewSet для работы с продуктами на платформе МойСклад"""
     # queryset = ProductPrice.objects.filter(platform=Platform.objects.get(platform_type=MarketplaceChoices.MOY_SKLAD))
@@ -110,7 +78,7 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         total_processed = 0  # Счетчик обработанных записей
 
         # change_product_price(TOKEN_MY_SKLAD)
-        moy_sklad_add_data_to_db()
+        # moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
@@ -118,11 +86,12 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # ozon_comission_logistic_add_data_to_db()
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
-        print(' ')
-        profitability_calculate(user_id=user.id)
+
+        # profitability_calculate(user_id=user.id)
+        print('moy_sklad_costprice_add_to_db ')
         moy_sklad_costprice_add_to_db()
         calculate_mp_price_with_profitability(user.id)
-        action_article_price_to_db()
+        # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -187,10 +156,14 @@ class TopSelectorsViewSet(GenericAPIView):
         GET-запрос для получения отфильтрованных данных
         """
         user_id = self.request.query_params.get('user_id')
-        accounts_data = Account.objects.filter(user__id=user_id)
-        platforms_data = Platform.objects.all()
-        brands_data = ProductPrice.objects.all().values('brand').distinct()
-        goods_data = ProductPrice.objects.filter(account__user__id=user_id)
+        accounts_data = Account.objects.filter(
+            platform__id__in=[1, 2, 4], user__id=user_id).order_by('id')
+        platforms_data = Platform.objects.filter(
+            id__in=[1, 2, 4]).order_by('id')
+        brands_data = ProductPrice.objects.all().values(
+            'brand').distinct().order_by('brand')
+        goods_data = ProductPrice.objects.filter(
+            account__user__id=user_id).order_by('id')
 
         top_selection_platform_id = self.request.query_params.get(
             'top_selection_platform_id')
@@ -208,12 +181,16 @@ class TopSelectorsViewSet(GenericAPIView):
                 platform__id__in=platforms_list)
             goods_data = goods_data.filter(
                 Q(mp_product__platform__id__in=platforms_list)).distinct()
+            brands_data = brands_data.filter(
+                mp_product__platform__id__in=platforms_list)
 
         if top_selection_account_id:
             accounts_list = top_selection_account_id.split(',')
             # accounts_data = accounts_data.filter(id__in=accounts_list)
             goods_data = goods_data.filter(
                 Q(mp_product__account__id__in=accounts_list)).distinct()
+            brands_data = brands_data.filter(
+                mp_product__account__id__in=platforms_list)
 
         if top_selection_brand:
             brands = top_selection_brand.split(',')
