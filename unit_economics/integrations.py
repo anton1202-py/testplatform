@@ -571,12 +571,12 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                 if profitability < incoming_profitability:
                     profitability = incoming_profitability
                 # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
-                    common_price = round(((common_product_cost_price/100 + comission + logistic_cost +
-                                           common_product_cost_price/100) / (1 - profitability/100 - overheads)), 2)
+                    common_price = round(((common_product_cost_price + comission + logistic_cost
+                                           ) / (1 - profitability - overheads)), 2)
 
                     # Цена на основе себестоимости по оприходованию
-                    enter_price = round(((profit_product_cost_price + comission + logistic_cost +
-                                          profit_product_cost_price) / (1 - profitability/100 - overheads)), 2)
+                    enter_price = round(((profit_product_cost_price + comission + logistic_cost
+                                          ) / (1 - profitability - overheads)), 2)
                     search_params = {'mp_product': product}
                     try:
                         mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
@@ -724,7 +724,7 @@ def changer_profitability_calculate(product):
 
 def changer_price_with_profitability(product):
     """
-    Вспомогательная функция для подсчета цены на оснеове рентабельности.
+    Вспомогательная функция для подсчета цены на основе рентабельности.
     Применяется в сигналах изменения различных моделей
 
     Входящие данные:

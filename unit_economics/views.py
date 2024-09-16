@@ -284,7 +284,6 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Повторяющиеся фильтры в верху страницы и вверху таблицы.
         table_platform_id = self.request.query_params.get('table_platform_id')
-        table_brand = self.request.query_params.get('table_brand')
 
         filter_platform_id = ''
 
@@ -302,9 +301,6 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(account__id__in=accounts_list)
         if top_selection_brand:
             brands = top_selection_brand.split(',')
-            queryset = queryset.filter(product__brand__in=brands)
-        elif table_brand:
-            brands = table_brand.split(',')
             queryset = queryset.filter(product__brand__in=brands)
 
         if top_selection_product_name:
