@@ -211,7 +211,7 @@ class TopSelectorsViewSet(GenericAPIView):
 
         if top_selection_account_id:
             accounts_list = top_selection_account_id.split(',')
-            accounts_data = accounts_data.filter(id__in=accounts_list)
+            # accounts_data = accounts_data.filter(id__in=accounts_list)
             goods_data = goods_data.filter(
                 Q(mp_product__account__id__in=accounts_list)).distinct()
 
@@ -221,10 +221,6 @@ class TopSelectorsViewSet(GenericAPIView):
 
         if top_selection_product_name:
             products_list = top_selection_product_name.split(',')
-            queryset = queryset.filter(
-                mp_product__product__id__in=products_list)
-            product_situations = product_situations.filter(
-                id__in=products_list)
 
         try:
 
