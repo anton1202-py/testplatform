@@ -320,6 +320,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         profitability_group = request.query_params.get('profitability_group')
         calculate_product_price = request.query_params.get(
             'calculate_product_price')
+        action_id = request.query_params.get('action_id')
 
         if profitability_group:
             result = profitability_calculate(
@@ -332,6 +333,9 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
                 float(calculate_product_price), queryset)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_products])
+        # Фильтр по id акции
+        if action_id:
+            queryset = queryset.filter(product_in_action__action__id=action_id).distinct()
         page = self.paginate_queryset(queryset)
 
         if page is not None:
@@ -796,3 +800,12 @@ class UserIdView(APIView):
 #         if product_id:
 #             return MarketplaceCommission.objects.filter(marketplace_product__product_id=product_id)
 #         return MarketplaceCommission.objects.none()
+
+
+class MarketplaceActionList(ListAPIView):
+    """
+    Выводит список акций.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = MarketplaceActionSerializer
+    queryset = MarketplaceAction.objects.all()

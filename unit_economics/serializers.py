@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from core.models import Account, Platform
@@ -129,9 +130,9 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         return None
 
     def get_actions(self, obj):
-        actions = MarketplaceProductInAction.objects.filter(
-            marketplace_product=obj)
-        return MarketplaceProductInActionSerializer(actions, many=True).data
+        # Получаем только активные акции
+        product_in_actions = obj.product_in_action.filter(action__date_finish__gte=timezone.now().date(), status=True)
+        return MarketplaceProductInActionSerializer(product_in_actions, many=True).data
 
 
 class MarketplaceCommissionSerializer(serializers.ModelSerializer):
@@ -156,23 +157,37 @@ class ProfitabilityMarketplaceProductSerializer(serializers.ModelSerializer):
         fields = ['product', 'profit', 'profitability', 'overheads']
 
 
+class MarketplaceActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MarketplaceAction
+        fields = ['id', 'action_number', 'action_name', 'date_start', 'date_finish']
+
+
 class MarketplaceProductInActionSerializer(serializers.ModelSerializer):
+    action = MarketplaceActionSerializer()
 
     class Meta:
         model = MarketplaceProductInAction
-        fields = ['marketplace_product', 'action', 'product_price', 'status']
+        fields = ['action', 'product_price', 'status']
 
 
-class MarketplaceActionSerializer(serializers.ModelSerializer):
-    products = MarketplaceProductInActionSerializer(
-        many=True, source='action')  # Используем source для связи
-    platform = PlatformSerializer()
-    account = AccountSerializer()
-
-    class Meta:
-        model = MarketplaceAction
-        fields = ['platform', 'account', 'action_number',
-                  'action_name', 'date_start', 'date_finish', 'products']
+# class MarketplaceProductInActionSerializer(serializers.ModelSerializer):
+#
+#     class Meta:
+#         model = MarketplaceProductInAction
+#         fields = ['marketplace_product', 'action', 'product_price', 'status']
+#
+#
+# class MarketplaceActionSerializer(serializers.ModelSerializer):
+#     products = MarketplaceProductInActionSerializer(
+#         many=True, source='action')  # Используем source для связи
+#     platform = PlatformSerializer()
+#     account = AccountSerializer()
+#
+#     class Meta:
+#         model = MarketplaceAction
+#         fields = ['platform', 'account', 'action_number',
+#                   'action_name', 'date_start', 'date_finish', 'products']
 
 
 class MarketplaceProductPriceWithProfitabilitySerializer(serializers.ModelSerializer):
