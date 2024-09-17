@@ -83,7 +83,7 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         platform_name = obj.platform.name.lower()
         if platform_name == 'wildberries':
             return obj.product.price_product.wb_price
-        elif platform_name == 'yandex':
+        elif platform_name == 'yandex market':
             return obj.product.price_product.yandex_price
         elif platform_name == 'ozon':
             ozon_price = obj.product.ozon_price_product.filter(

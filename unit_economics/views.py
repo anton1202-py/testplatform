@@ -79,19 +79,19 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
 
         # change_product_price(TOKEN_MY_SKLAD)
         moy_sklad_add_data_to_db()
-        # wb_products_data_to_db()
-        # wb_logistic_add_to_db()
-        # wb_comission_add_to_db()
-        # ozon_products_data_to_db()
-        # ozon_comission_logistic_add_data_to_db()
-        # yandex_add_products_data_to_db()
-        # yandex_comission_logistic_add_data_to_db()
+        wb_products_data_to_db()
+        wb_logistic_add_to_db()
+        wb_comission_add_to_db()
+        ozon_products_data_to_db()
+        ozon_comission_logistic_add_data_to_db()
+        yandex_add_products_data_to_db()
+        yandex_comission_logistic_add_data_to_db()
 
-        # profitability_calculate(user_id=user.id)
+        profitability_calculate(user_id=user.id)
         print('moy_sklad_costprice_add_to_db ')
         # moy_sklad_costprice_add_to_db()
-        # calculate_mp_price_with_profitability(user.id)
-        # action_article_price_to_db()
+        calculate_mp_price_with_profitability(user.id)
+        action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -649,9 +649,11 @@ class MarketplaceActionListView(APIView):
             return Response({"detail": "Платформа не найдена"}, status=status.HTTP_404_NOT_FOUND)
         # Получаем акции для выбранной платформы
         if action_id:
-            actions = MarketplaceAction.objects.filter(platform=platform, id=action_id).prefetch_related('action')
+            actions = MarketplaceAction.objects.filter(
+                platform=platform, id=action_id).prefetch_related('action')
         else:
-            actions = MarketplaceAction.objects.filter(platform=platform).prefetch_related('action')
+            actions = MarketplaceAction.objects.filter(
+                platform=platform).prefetch_related('action')
         platform_data = {
             'platform_id': platform.id,
             'platform_name': platform.name,
@@ -664,7 +666,8 @@ class MarketplaceActionListView(APIView):
             # Пропускаем акцию, если у нее нет продуктов
             if not products_in_action.exists():
                 continue
-            products_data = MarketplaceProductInActionSerializer(products_in_action, many=True).data
+            products_data = MarketplaceProductInActionSerializer(
+                products_in_action, many=True).data
             action_data = {
                 'action_id': action.id,
                 'action_number': action.action_number,
