@@ -58,8 +58,11 @@ def moy_sklad_costprice_add_to_db():
             cost_price = data['cost_price']
             if ProductPrice.objects.filter(
                     account=account, barcode=barcodes_list).exists():
-                prod_obj = ProductPrice.objects.get(
+                prod_obj = ProductPrice.objects.filter(
                     account=account, barcode=barcodes_list)
+                if len(prod_obj) > 1:
+                    print(prod_obj)
+                prod_obj = prod_obj[0]
                 search_params = {'product': prod_obj}
                 values_for_update = {
                     "cost_price": cost_price

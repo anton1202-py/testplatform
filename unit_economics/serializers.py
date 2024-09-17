@@ -73,7 +73,7 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
         model = MarketplaceProduct
         fields = [
             'id', 'name', 'sku', 'seller_article', 'barcode', 'brand', 'cost_price', 'posting_costprice', 'rrc', 'price', 'commission',
-            'logistic_cost', 'overheads', 'profit', 'profitability', 'image', 'profit_price', 'usual_price', 'actions'
+            'logistic_cost', 'overheads', 'profit', 'profitability', 'image', 'profit_price', 'usual_price', 'actions', 'change_price_flag'
         ]
 
     def get_rrc(self, obj):

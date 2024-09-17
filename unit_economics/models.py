@@ -137,6 +137,8 @@ class MarketplaceProduct(models.Model):
     weight = models.FloatField(verbose_name='Вес', null=True, blank=True)
     category = models.ForeignKey('MarketplaceCategory', related_name='mp_category',
                                  on_delete=models.CASCADE, verbose_name='Категория товара', null=True, blank=True)
+    change_price_flag = models.BooleanField(
+        verbose_name='Показатель изменения цены', default=False)
 
     class Meta:
         verbose_name = "Продукт на Маркетплейсе"

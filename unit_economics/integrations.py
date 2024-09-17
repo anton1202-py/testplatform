@@ -675,6 +675,8 @@ def update_price_info_from_user_request(data_dict: dict):
             if product_obj.moy_sklad_product_number:
                 change_product_price(moy_sklad_token, platform_name, account_name,
                                      new_price, product_obj.moy_sklad_product_number)
+                mp_product_obj.change_price_flag = True
+                mp_product_obj.save()
             else:
                 message = f"У продукта {product_obj.name} не могу обновить цену на {platform_name} {account_name}. В БД не нашел его ID с Мой склад"
                 # for chat_id in ADMINS_CHATID_LIST:

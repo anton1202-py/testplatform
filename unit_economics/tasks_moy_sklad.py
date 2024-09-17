@@ -117,8 +117,6 @@ def moy_sklad_add_data_to_db():
                 else:
                     cost_price = None
                 common_cost_price = cost_price/100
-                if "c1d9c73a-d82f-11ed-0a80-0b960080d4cb" in item.get('id'):
-                    print('cost_price', cost_price, common_cost_price)
 
                 if ProductPrice.objects.filter(
                         account=account,
@@ -285,7 +283,7 @@ def moy_sklad_enters_calculate():
         enter_main_data = {}
         # print(len(enters_list))
 
-        # x = len(enters_list)
+        x = len(enters_list)
         for enter in enters_list:
             enter_id = enter['id']
             if 'moment' in enter:
@@ -334,8 +332,8 @@ def moy_sklad_enters_calculate():
                                     'quantity': quantity,
                                     'overhead': overhead
                                 })
-            # x -= 1
-            # print(x)
+            x -= 1
+            print(x)
         main_retuned_dict[account] = enter_main_data
     return main_retuned_dict
 

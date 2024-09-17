@@ -328,7 +328,6 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
                 id__in=[p.id for p in result['filtered_products']])
 
         if calculate_product_price:
-            print('Подсчет')
             updated_products = calculate_mp_price_with_incoming_profitability(
                 float(calculate_product_price), queryset)
             queryset = MarketplaceProduct.objects.filter(
