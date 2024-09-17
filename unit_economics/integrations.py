@@ -660,20 +660,20 @@ def update_price_info_from_user_request(data_dict: dict):
         if new_price:
             productprice_obj = ProductForMarketplacePrice.objects.get(
                 product=product_obj)
-            if int(platform_id) == 1:
+            if platform_id == 1:
                 productprice_obj.wb_price = new_price
                 productprice_obj.save()
-            if int(platform_id) == 2:
+            if platform_id == 2:
                 productprice_obj.yandex_price = new_price
                 productprice_obj.save()
-            if int(platform_id) == 4:
+            if platform_id == 4:
                 ozonproductprice_obj = ProductOzonPrice.objects.get(
                     product=product_obj, account=account_obj)
                 ozonproductprice_obj.ozon_price = new_price
                 ozonproductprice_obj.save()
             account_name = Account.objects.get(id=account_id).name
             if product_obj.moy_sklad_product_number:
-                change_product_price(moy_sklad_token, int(platform_id), account_name,
+                change_product_price(moy_sklad_token, platform_id, account_name,
                                      new_price, product_obj.moy_sklad_product_number)
                 mp_product_obj.change_price_flag = True
                 mp_product_obj.save()
