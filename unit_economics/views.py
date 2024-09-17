@@ -563,74 +563,118 @@ class CalculateMarketplacePriceView(GenericAPIView):
         return Response({"detail": "Цены успешно обновлены."})
 
 
+# class MarketplaceActionListView(APIView):
+#     """На входе надо список id товаров отфильтрованных по селекторам в body
+#        пример "product_ids": [1977, 617, 618, 4242].
+#        Дополнительно принимает action_id, что бы отдать данные для выбранной акции
+#     """
+#     serializer_class = MarketplaceActionSerializer
+#     permission_classes = [IsAuthenticated]
+#
+#     def get_queryset(self):
+#         # Получаем текущую дату
+#         today = timezone.now().date()
+#         # Фильтруем акции, которые еще не закончились
+#         queryset = MarketplaceAction.objects.filter(date_finish__gt=today)
+#         # Фильтрация по платформе, если параметр передан
+#         platform_id = self.request.query_params.get('platform')
+#         if platform_id:
+#             queryset = queryset.filter(platform__id=platform_id)
+#         # Фильтрация по названию акции, если параметр передан
+#         action_name = self.request.query_params.get('action_name')
+#         if action_name:
+#             queryset = queryset.filter(action_name__icontains=action_name)
+#         # Сортировка по платформе и названию акции
+#         queryset = queryset.order_by('platform_id', 'action_name')
+#
+#         return queryset
+#
+#     def post(self, request, *args, **kwargs):
+#         today = timezone.now().date()
+#         product_ids = request.data.get('product_ids')
+#         action_id = request.data.get('action_id')
+#
+#         if not product_ids:
+#             return Response({"detail": "Нужно id товаров"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         try:
+#             product_ids = [int(pid) for pid in product_ids]
+#         except ValueError:
+#             return Response({"detail": "Не верный формат"}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         # Получаем ID акций, содержащих указанные товары
+#         actions_ids = MarketplaceProductInAction.objects.filter(
+#             marketplace_product__id__in=product_ids
+#         ).values_list('action_id', flat=True).distinct()
+#
+#         # Фильтруем акции, которые еще не закончились и имеют указанные ID
+#         actions = MarketplaceAction.objects.filter(
+#             id__in=actions_ids,
+#             date_finish__gt=today
+#         ).prefetch_related('account__platform')  # Здесь добавляем правильные связи
+#         if action_id:
+#             actions = actions.filter(id=action_id)
+#         filtered_actions = []
+#         for action in actions:
+#             filtered_products = action.action.filter(
+#                 marketplace_product__id__in=product_ids)
+#             if filtered_products.exists():
+#                 action_data = {
+#                     'platform': action.platform.id,
+#                     'account': action.account.id,
+#                     'action_number': action.action_number,
+#                     'action_name': action.action_name,
+#                     'date_start': action.date_start,
+#                     'date_finish': action.date_finish,
+#                     'products': MarketplaceProductInActionSerializer(filtered_products, many=True).data
+#                 }
+#                 filtered_actions.append(action_data)
+#
+#         return Response(filtered_actions)
+
+
 class MarketplaceActionListView(APIView):
-    """На входе надо список id товаров отфильтрованных по селекторам в body
-       пример "product_ids": [1977, 617, 618, 4242].
-       Дополнительно принимает action_id, что бы отдать данные для выбранной акции
-    """
-    serializer_class = MarketplaceActionSerializer
+    """Получение всех акций и товаров для указанной платформы"""
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Получаем текущую дату
-        today = timezone.now().date()
-        # Фильтруем акции, которые еще не закончились
-        queryset = MarketplaceAction.objects.filter(date_finish__gt=today)
-        # Фильтрация по платформе, если параметр передан
-        platform_id = self.request.query_params.get('platform')
-        if platform_id:
-            queryset = queryset.filter(platform__id=platform_id)
-        # Фильтрация по названию акции, если параметр передан
-        action_name = self.request.query_params.get('action_name')
-        if action_name:
-            queryset = queryset.filter(action_name__icontains=action_name)
-        # Сортировка по платформе и названию акции
-        queryset = queryset.order_by('platform_id', 'action_name')
-
-        return queryset
-
-    def post(self, request, *args, **kwargs):
-        today = timezone.now().date()
-        product_ids = request.data.get('product_ids')
-        action_id = request.data.get('action_id')
-
-        if not product_ids:
-            return Response({"detail": "Нужно id товаров"}, status=status.HTTP_400_BAD_REQUEST)
-
+    def get(self, request, *args, **kwargs):
+        # Получаем platform_id из параметров запроса
+        platform_id = request.query_params.get('platform_id')
+        action_id = request.query_params.get('action_id')
+        if not platform_id:
+            platform_id = 1
         try:
-            product_ids = [int(pid) for pid in product_ids]
-        except ValueError:
-            return Response({"detail": "Не верный формат"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Получаем ID акций, содержащих указанные товары
-        actions_ids = MarketplaceProductInAction.objects.filter(
-            marketplace_product__id__in=product_ids
-        ).values_list('action_id', flat=True).distinct()
-
-        # Фильтруем акции, которые еще не закончились и имеют указанные ID
-        actions = MarketplaceAction.objects.filter(
-            id__in=actions_ids,
-            date_finish__gt=today
-        ).prefetch_related('account__platform')  # Здесь добавляем правильные связи
+            platform = Platform.objects.get(id=platform_id)
+        except Platform.DoesNotExist:
+            return Response({"detail": "Платформа не найдена"}, status=status.HTTP_404_NOT_FOUND)
+        # Получаем акции для выбранной платформы
         if action_id:
-            actions = actions.filter(id=action_id)
-        filtered_actions = []
+            actions = MarketplaceAction.objects.filter(platform=platform, id=action_id).prefetch_related('action')
+        else:
+            actions = MarketplaceAction.objects.filter(platform=platform).prefetch_related('action')
+        platform_data = {
+            'platform_id': platform.id,
+            'platform_name': platform.name,
+            'actions': []
+        }
         for action in actions:
-            filtered_products = action.action.filter(
-                marketplace_product__id__in=product_ids)
-            if filtered_products.exists():
-                action_data = {
-                    'platform': action.platform.id,
-                    'account': action.account.id,
-                    'action_number': action.action_number,
-                    'action_name': action.action_name,
-                    'date_start': action.date_start,
-                    'date_finish': action.date_finish,
-                    'products': MarketplaceProductInActionSerializer(filtered_products, many=True).data
-                }
-                filtered_actions.append(action_data)
-
-        return Response(filtered_actions)
+            # Получаем продукты для каждой акции
+            products_in_action = MarketplaceProductInAction.objects.filter(action=action).select_related(
+                'marketplace_product')
+            # Пропускаем акцию, если у нее нет продуктов
+            if not products_in_action.exists():
+                continue
+            products_data = MarketplaceProductInActionSerializer(products_in_action, many=True).data
+            action_data = {
+                'action_id': action.id,
+                'action_number': action.action_number,
+                'action_name': action.action_name,
+                'date_start': action.date_start,
+                'date_finish': action.date_finish,
+                'products': products_data,
+            }
+            platform_data['actions'].append(action_data)
+        return Response(platform_data, status=status.HTTP_200_OK)
 
 # class MarketplaceActionListView(ListAPIView):
 #     """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
