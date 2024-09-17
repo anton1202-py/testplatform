@@ -145,8 +145,7 @@ def moy_sklad_add_data_to_db():
                         barcode=[list(barcode.values())[0]
                                  for barcode in item.get('barcodes', [])],
                         product_type=item['meta'].get('type'),
-                        cost_price=common_cost_price,
-                        price_info=item['salePrices']
+                        cost_price=common_cost_price
                     ).save()
 
                 product_obj = ProductPrice.objects.get(
