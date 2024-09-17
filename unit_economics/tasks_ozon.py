@@ -81,7 +81,8 @@ def ozon_comission_logistic_add_data_to_db():
                             comissions_data['fbo_fulfillment_amount'] + \
                             comissions_data['fbo_direct_flow_trans_max_amount']
                         cost_logistic_fbs = comissions_data['fbs_deliv_to_customer_amount'] + \
-                            comissions_data['fbs_direct_flow_trans_max_amount']
+                            comissions_data['fbs_direct_flow_trans_max_amount'] + \
+                            comissions_data['fbs_first_mile_max_amount']
 
                         add_marketplace_logistic_to_db(
                             product_obj, cost_logistic_fbo=cost_logistic_fbo, cost_logistic_fbs=cost_logistic_fbs)

@@ -38,7 +38,8 @@ from unit_economics.serializers import (
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
     ProductPriceSelectSerializer, ProductPriceSerializer,
     ProfitabilityMarketplaceProductSerializer)
-from unit_economics.tasks_moy_sklad import moy_sklad_add_data_to_db
+from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
+                                            moy_sklad_stock_data)
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
 from unit_economics.tasks_wb import (wb_categories_list,
@@ -86,12 +87,12 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # ozon_comission_logistic_add_data_to_db()
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
-
+        # moy_sklad_stock_data()
         # profitability_calculate(user_id=user.id)
-        print('moy_sklad_costprice_add_to_db ')
+        # print('moy_sklad_costprice_add_to_db ')
         moy_sklad_costprice_add_to_db()
-        calculate_mp_price_with_profitability(user.id)
-        action_article_price_to_db()
+        # calculate_mp_price_with_profitability(user.id)
+        # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -335,7 +336,8 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
                 id__in=[p.id for p in updated_products])
         # Фильтр по id акции
         if action_id:
-            queryset = queryset.filter(product_in_action__action__id=action_id).distinct()
+            queryset = queryset.filter(
+                product_in_action__action__id=action_id).distinct()
         page = self.paginate_queryset(queryset)
 
         if page is not None:

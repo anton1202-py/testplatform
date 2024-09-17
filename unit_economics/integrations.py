@@ -621,7 +621,7 @@ def update_price_info_from_user_request(data_dict: dict):
     {
         'user_id': user_id.
         'account_id': account_id,
-        'platform_name': platform_name,
+        'platform_id': platform_id,
         'products_data': [
             {
                 'marketplaceproduct_id': marketplaceproduct_id,
@@ -634,7 +634,7 @@ def update_price_info_from_user_request(data_dict: dict):
 
     user_id = data_dict.get('user_id', '')
     account_id = data_dict.get('account_id', '')
-    platform_name = data_dict.get('platform_name', '')
+    platform_id = data_dict.get('platform_id', '')
     products_data = data_dict.get('products_data', '')
 
     for data in products_data:
@@ -660,25 +660,25 @@ def update_price_info_from_user_request(data_dict: dict):
         if new_price:
             productprice_obj = ProductForMarketplacePrice.objects.get(
                 product=product_obj)
-            if platform_name == 'Wildberries':
+            if int(platform_id) == 1:
                 productprice_obj.wb_price = new_price
                 productprice_obj.save()
-            if platform_name == 'Yandex Market':
+            if int(platform_id) == 2:
                 productprice_obj.yandex_price = new_price
                 productprice_obj.save()
-            if platform_name == 'OZON':
+            if int(platform_id) == 4:
                 ozonproductprice_obj = ProductOzonPrice.objects.get(
                     product=product_obj, account=account_obj)
                 ozonproductprice_obj.ozon_price = new_price
                 ozonproductprice_obj.save()
             account_name = Account.objects.get(id=account_id).name
             if product_obj.moy_sklad_product_number:
-                change_product_price(moy_sklad_token, platform_name, account_name,
+                change_product_price(moy_sklad_token, int(platform_id), account_name,
                                      new_price, product_obj.moy_sklad_product_number)
                 mp_product_obj.change_price_flag = True
                 mp_product_obj.save()
             else:
-                message = f"У продукта {product_obj.name} не могу обновить цену на {platform_name} {account_name}. В БД не нашел его ID с Мой склад"
+                message = f"У продукта {product_obj.name} не могу обновить цену на {int(platform_id)} {account_name}. В БД не нашел его ID с Мой склад"
                 # for chat_id in ADMINS_CHATID_LIST:
                 #     bot.send_message(chat_id=chat_id, text=message[:4000])
 

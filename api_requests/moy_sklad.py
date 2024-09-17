@@ -85,7 +85,7 @@ def moy_sklad_enter(TOKEN_MY_SKLAD, offset=0, iter_numb=0, products_data_list=No
         if len(products) == limit:
             iter_numb += 1
             offset = limit*iter_numb
-            return moy_sklad_assortment(TOKEN_MY_SKLAD, offset, iter_numb, products_data_list)
+            return moy_sklad_enter(TOKEN_MY_SKLAD, offset, iter_numb, products_data_list)
         else:
             return products_data_list
     else:
@@ -170,7 +170,7 @@ def get_stock_info(TOKEN_MY_SKLAD):
         print(message)
 
 
-def change_product_price(TOKEN_MY_SKLAD, platform, account_name, new_price, product_id):
+def change_product_price(TOKEN_MY_SKLAD, platform_id, account_name, new_price, product_id):
     """
     Изменение цены на продукт на Мой Склад
 
@@ -182,8 +182,8 @@ def change_product_price(TOKEN_MY_SKLAD, platform, account_name, new_price, prod
         'Озон Комбо': 'ОЗОН Combo',
         'Озон спейс': 'ОЗОН Market Space'
     }
-    marketplace_dict = {'WIldberries': 'WB',
-                        'Yandex Market': 'Яндекс'
+    marketplace_dict = {1: 'WB',
+                        2: 'Яндекс'
                         }
     api_url = f'https://api.moysklad.ru/api/remap/1.2/entity/product/{product_id}'
     headers = {
@@ -195,8 +195,8 @@ def change_product_price(TOKEN_MY_SKLAD, platform, account_name, new_price, prod
     salePrices = response.json()['salePrices']
 
     for sp in salePrices:
-        if platform != 'OZON':
-            if sp['priceType']['name'] == f"Цена {marketplace_dict[platform]} после скидки":
+        if platform_id != 4:
+            if sp['priceType']['name'] == f"Цена {marketplace_dict[platform_id]} после скидки":
                 sp['value'] = new_price
         else:
             if sp['priceType']['name'] == f"Цена {OZON_ACCOUNT_NAME[account_name]}":

@@ -54,12 +54,12 @@ def moy_sklad_costprice_add_to_db():
     cost_price_data = moy_sklad_costprice_calculate()
     for account, cost_price_list in cost_price_data.items():
         for data in cost_price_list:
-            barcodes_list = data['barcodes']
+            moy_sklad_id = data['moy_sklad_id']
             cost_price = data['cost_price']
             if ProductPrice.objects.filter(
-                    account=account, barcode=barcodes_list).exists():
+                    account=account, moy_sklad_product_number=moy_sklad_id).exists():
                 prod_obj = ProductPrice.objects.filter(
-                    account=account, barcode=barcodes_list)
+                    account=account, moy_sklad_product_number=moy_sklad_id)
                 if len(prod_obj) > 1:
                     print(prod_obj)
                 prod_obj = prod_obj[0]

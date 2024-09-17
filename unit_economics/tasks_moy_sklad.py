@@ -156,44 +156,6 @@ def moy_sklad_add_data_to_db():
                 if image_filename:
                     product_obj.image.save(
                         image_filename, image_content)
-                # product_info = {
-                #     'account': account,
-                #     'moy_sklad_product_number': item.get('id', ''),
-                #     'name': item.get('name', ''),
-                #     'brand': brand,
-                #     'vendor': item.get('article', ''),
-                #     'barcode': [list(barcode.values())[0] for barcode in item.get('barcodes', [])],
-                #     'product_type': item['meta'].get('type'),
-                #     'cost_price': common_cost_price,
-                #     'price_info': item['salePrices'],
-                #     'image_filename': image_filename,
-                #     'image_content': image_content
-                # }
-                # product_data.append(product_info)
-
-            # Массовая вставка или обновление данных
-            # for product_info in product_data:
-            #     search_params = {'account': product_info['account'], "barcode": product_info['barcode'], "moy_sklad_product_number": product_info['moy_sklad_product_number'],
-            #                      }
-            #     values_for_update = {
-            #         "name": product_info['name'],
-            #         "product_type": product_info['product_type'],
-            #         "cost_price": product_info['cost_price'],
-            #         'brand': product_info['brand'],
-            #         "vendor": product_info['vendor']
-            #     }
-            #     product_obj_сort = ProductPrice.objects.update_or_create(
-            #         account=product_info['account'],
-            #         barcode=product_info['barcode'],
-            #         moy_sklad_product_number=product_info['moy_sklad_product_number'],
-            #         defaults=values_for_update
-            #     )
-            #     product_obj = product_obj_сort[0]
-            #     price_for_marketplace_from_moysklad(
-            #         product_obj, product_info['price_info'], account_names)
-            #     if product_info['image_content']:
-            #         product_obj.image.save(
-            #             product_info['image_filename'], product_info['image_content'])
 
 
 # @sender_error_to_tg
@@ -246,7 +208,7 @@ def moy_sklad_enters_calculate():
     {account:
         {code:
             {
-                'article_data': {'barcodes: [barcode_list], 'brand': brand}, 
+                'article_data': {'moy_sklad_id: moy_sklad_id, 'brand': brand}, 
                 'enter_data': {
                     [
                         {
@@ -264,7 +226,7 @@ def moy_sklad_enters_calculate():
     Где:
         account - текущий аккаунт на Мой Склад
         code - обозначение артикула в Мой Склад
-        [barcode_list] - список баркодов артикулов в Мой Склад
+        moy_sklad_id - id товара в Мой Склад
         brand - бренд артикула
         enter_date - дата поставки
         price - стоимость поставки
@@ -278,34 +240,32 @@ def moy_sklad_enters_calculate():
     main_retuned_dict = {}
     for account in accounts_ms:
         token_ms = account.authorization_fields['token']
-        enters_list = moy_sklad_enter(token_ms)
-
+        enters_list_raw = moy_sklad_enter(token_ms)
+        enters_list = sorted(
+            enters_list_raw, key=lambda x: x['moment'], reverse=True)
         enter_main_data = {}
         # print(len(enters_list))
 
         x = len(enters_list)
-        for enter in enters_list:
+        print(len(enters_list))
+        for enter in enters_list[:2200]:
             enter_id = enter['id']
             if 'moment' in enter:
                 enter_date = enter['moment']
+                print(enter_date)
                 positions = moy_sklad_positions_enter(token_ms, enter_id)
+                print(len(positions))
                 for position in positions:
-                    barcodes = []
                     api_url = position['assortment']['meta']['href']
                     assortiment_data = get_assortiment_info(
                         token_ms, api_url)
                     if assortiment_data:
                         if assortiment_data['archived'] == False:
+                            moy_sklad_id = assortiment_data['id']
                             quantity = position.get('quantity', 0)
                             price = position.get('price', 0)
                             overhead = position.get('overhead', 0)
                             article = assortiment_data['code']
-
-                            if 'barcodes' in assortiment_data:
-                                barcode_list = assortiment_data['barcodes']
-                                for barcode_data in barcode_list:
-                                    for key, barcode in barcode_data.items():
-                                        barcodes.append(barcode)
                             attributes = assortiment_data['attributes']
                             for attribute in attributes:
                                 if attribute['name'] == 'Бренд':
@@ -315,7 +275,8 @@ def moy_sklad_enters_calculate():
                                 enter_main_data[article] = {
                                     'article_data':
                                         {
-                                            'barcodes': barcodes,
+                                            'moy_sklad_id': moy_sklad_id,
+                                            # 'barcodes': barcodes,
                                             'brand': brand
                                         },
                                     'enter_data': [
@@ -360,15 +321,17 @@ def moy_sklad_stock_data():
         token_ms = account.authorization_fields['token']
         stocks_list = get_stock_info(token_ms)
         stocks_data = {}
+        print(len(stocks_list))
         for stock_data in stocks_list:
             if 'code' in stock_data:
                 code = stock_data['code']
                 if 'stock' in stock_data:
                     stock = stock_data['stock']
-                else:
-                    stock = 0
-                stocks_data[code] = stock
+                    stocks_data[code] = stock
         main_retuned_dict[account] = stocks_data
+    for i, j in main_retuned_dict.items():
+        print(j['ЭнергияACH2000'])
+    # print(main_retuned_dict)
     return main_retuned_dict
 
 
@@ -392,20 +355,23 @@ def moy_sklad_costprice_calculate():
             amount = 0
             overhead = 0
             price = 0
-            for enter_data in sorted_enters_data_list:
+            for index, enter_data in enumerate(sorted_enters_data_list):
                 summ += enter_data['quantity']
                 if code in stock_data[account]:
-                    if summ > stock_data[account][code]:
+                    if summ >= stock_data[account][code]:
                         overhead = enter_data['overhead']
                         amount = enter_data['quantity']
                         price = enter_data['price']
-                        break
+                        continue
+                    elif summ < stock_data[account][code] and index == len(sorted_enters_data_list) - 1:
+                        overhead = enter_data['overhead']
+                        amount = enter_data['quantity']
+                        price = enter_data['price']
+
             if amount > 0:
                 cost_price = (price + overhead) / (amount * 100)
-            else:
-                cost_price = 0
-            inner_dict = {'barcodes': article_info['article_data']
-                          ['barcodes'], 'cost_price': cost_price}
-            code_list.append(inner_dict)
+                inner_dict = {'moy_sklad_id': article_info['article_data']
+                              ['moy_sklad_id'], 'cost_price': cost_price}
+                code_list.append(inner_dict)
         account_cost_price_data[account] = code_list
     return account_cost_price_data
