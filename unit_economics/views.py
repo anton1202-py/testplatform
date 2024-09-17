@@ -318,11 +318,21 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
 
         profitability_group = request.query_params.get('profitability_group')
+        calculate_product_price = request.query_params.get(
+            'calculate_product_price')
+
         if profitability_group:
             result = profitability_calculate(
                 request.user.id, profitability_group=profitability_group)
             queryset = queryset.filter(
                 id__in=[p.id for p in result['filtered_products']])
+
+        if calculate_product_price:
+            print('Подсчет')
+            updated_products = calculate_mp_price_with_incoming_profitability(
+                float(calculate_product_price), queryset)
+            queryset = MarketplaceProduct.objects.filter(
+                id__in=[p.id for p in updated_products])
         page = self.paginate_queryset(queryset)
 
         if page is not None:

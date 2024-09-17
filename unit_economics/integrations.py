@@ -547,14 +547,21 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
     """
     products_to_update = []
     products_to_create = []
-    for mp_product_id in product_list:
-        mp_products_list = MarketplaceProduct.objects.filter(id=mp_product_id).select_related(
+    for mp_product in product_list:
+        mp_products_list = MarketplaceProduct.objects.filter(id=mp_product.id).select_related(
             'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
 
         for product in mp_products_list:
+
             if product.platform.name == 'OZON':
-                comission = product.marketproduct_comission.fbs_commission
-                logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
+                if MarketplaceCommission.objects.filter(marketplace_product=product).exists():
+                    comission = product.marketproduct_comission.fbs_commission
+                else:
+                    comission = 0
+                if MarketplaceLogistic.objects.filter(marketplace_product=product).exists():
+                    logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
+                else:
+                    comission = 0
             else:
                 comission = product.marketproduct_comission.fbs_commission
                 logistic_cost = product.marketproduct_logistic.cost_logistic
@@ -568,7 +575,8 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                         product=product.product).cost_price
                 else:
                     profit_product_cost_price = 0
-                if profitability < incoming_profitability:
+
+                if incoming_profitability > profitability:
                     profitability = incoming_profitability
                 # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
                     common_price = round(((common_product_cost_price + comission + logistic_cost
@@ -604,11 +612,7 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
     if products_to_create:
         MarketplaceProductPriceWithProfitability.objects.bulk_create(
             products_to_create)
-    mp_products_list = []
-    for mp_product_id in product_list:
-        mp_products_obj = MarketplaceProduct.objects.get(id=mp_product_id)
-        mp_products_list.append(mp_products_obj)
-    return mp_products_list
+    return product_list
 
 
 def update_price_info_from_user_request(data_dict: dict):
