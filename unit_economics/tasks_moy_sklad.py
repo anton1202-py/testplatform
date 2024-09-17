@@ -265,34 +265,35 @@ def moy_sklad_enters_calculate():
                             quantity = position.get('quantity', 0)
                             price = position.get('price', 0)
                             overhead = position.get('overhead', 0)
-                            article = assortiment_data['code']
-                            attributes = assortiment_data['attributes']
-                            for attribute in attributes:
-                                if attribute['name'] == 'Бренд':
-                                    brand = attribute['value']
+                            if 'code' in assortiment_data:
+                                article = assortiment_data['code']
+                                attributes = assortiment_data['attributes']
+                                for attribute in attributes:
+                                    if attribute['name'] == 'Бренд':
+                                        brand = attribute['value']
 
-                            if article not in enter_main_data:
-                                enter_main_data[article] = {
-                                    'article_data':
-                                        {
-                                            'moy_sklad_id': moy_sklad_id,
-                                            # 'barcodes': barcodes,
-                                            'brand': brand
-                                        },
-                                    'enter_data': [
-                                        {
-                                            'date': enter_date,
-                                            'price': price,
-                                            'quantity': quantity,
-                                            'overhead': overhead
-                                        }]}
-                            else:
-                                enter_main_data[article]['enter_data'].append({
-                                    'date': enter_date,
-                                    'price': price,
-                                    'quantity': quantity,
-                                    'overhead': overhead
-                                })
+                                if article not in enter_main_data:
+                                    enter_main_data[article] = {
+                                        'article_data':
+                                            {
+                                                'moy_sklad_id': moy_sklad_id,
+                                                # 'barcodes': barcodes,
+                                                'brand': brand
+                                            },
+                                        'enter_data': [
+                                            {
+                                                'date': enter_date,
+                                                'price': price,
+                                                'quantity': quantity,
+                                                'overhead': overhead
+                                            }]}
+                                else:
+                                    enter_main_data[article]['enter_data'].append({
+                                        'date': enter_date,
+                                        'price': price,
+                                        'quantity': quantity,
+                                        'overhead': overhead
+                                    })
             x -= 1
             print(x)
         main_retuned_dict[account] = enter_main_data
