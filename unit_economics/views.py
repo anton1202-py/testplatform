@@ -78,7 +78,7 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         total_processed = 0  # Счетчик обработанных записей
 
         # change_product_price(TOKEN_MY_SKLAD)
-        # moy_sklad_add_data_to_db()
+        moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
@@ -89,8 +89,8 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
 
         # profitability_calculate(user_id=user.id)
         print('moy_sklad_costprice_add_to_db ')
-        moy_sklad_costprice_add_to_db()
-        calculate_mp_price_with_profitability(user.id)
+        # moy_sklad_costprice_add_to_db()
+        # calculate_mp_price_with_profitability(user.id)
         # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)

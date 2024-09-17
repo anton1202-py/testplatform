@@ -61,13 +61,13 @@ def moy_sklad_add_data_to_db():
                     if price['priceType']['name'] == 'Цена РРЦ МС':
                         wb_price_after_discount = price['value']
                 # Добавление фотографии
-                photo_link = picture_href_request(
-                    token_ms, item['images']['meta']['href'])
+                # photo_link = picture_href_request(
+                #     token_ms, item['images']['meta']['href'])
                 image_filename = ''
                 image_content = ''
-                if photo_link:
-                    image_filename, image_content = get_picture_from_moy_sklad(
-                        token_ms, photo_link)
+                # if photo_link:
+                #     image_filename, image_content = get_picture_from_moy_sklad(
+                #         token_ms, photo_link)
 
                 # Извлечение себестоимости
                 if item['meta']['type'] == 'product':
@@ -117,44 +117,86 @@ def moy_sklad_add_data_to_db():
                 else:
                     cost_price = None
                 common_cost_price = cost_price/100
-                product_info = {
-                    'account': account,
-                    'moy_sklad_product_number': item.get('id', ''),
-                    'name': item.get('name', ''),
-                    'brand': brand,
-                    'vendor': item.get('article', ''),
-                    'barcode': [list(barcode.values())[0] for barcode in item.get('barcodes', [])],
-                    'product_type': item['meta'].get('type'),
-                    'cost_price': common_cost_price,
-                    'price_info': item['salePrices'],
-                    'image_filename': image_filename,
-                    'image_content': image_content
-                }
-                product_data.append(product_info)
+                if "c1d9c73a-d82f-11ed-0a80-0b960080d4cb" in item.get('id'):
+                    print('cost_price', cost_price, common_cost_price)
+
+                if ProductPrice.objects.filter(
+                        account=account,
+                        barcode=[list(barcode.values())[0]
+                                 for barcode in item.get('barcodes', [])],
+                        moy_sklad_product_number=item.get('id', '')).exists():
+                    ProductPrice.objects.filter(
+                        account=account,
+                        barcode=[list(barcode.values())[0]
+                                 for barcode in item.get('barcodes', [])],
+                        moy_sklad_product_number=item.get('id', '')).update(
+                        name=item.get('name', ''),
+                        cost_price=common_cost_price,
+                        brand=brand,
+                        vendor=item.get('article', '')
+                    )
+                else:
+                    ProductPrice(
+                        account=account,
+                        moy_sklad_product_number=item.get('id', ''),
+                        name=item.get('name', ''),
+                        brand=brand,
+                        vendor=item.get('article', ''),
+                        barcode=[list(barcode.values())[0]
+                                 for barcode in item.get('barcodes', [])],
+                        product_type=item['meta'].get('type'),
+                        cost_price=common_cost_price,
+                        price_info=item['salePrices']
+                    ).save()
+
+                product_obj = ProductPrice.objects.get(
+                    account=account,
+                    barcode=[list(barcode.values())[0]
+                             for barcode in item.get('barcodes', [])],
+                    moy_sklad_product_number=item.get('id', ''))
+                price_for_marketplace_from_moysklad(
+                    product_obj, item['salePrices'], account_names)
+                if image_filename:
+                    product_obj.image.save(
+                        image_filename, image_content)
+                # product_info = {
+                #     'account': account,
+                #     'moy_sklad_product_number': item.get('id', ''),
+                #     'name': item.get('name', ''),
+                #     'brand': brand,
+                #     'vendor': item.get('article', ''),
+                #     'barcode': [list(barcode.values())[0] for barcode in item.get('barcodes', [])],
+                #     'product_type': item['meta'].get('type'),
+                #     'cost_price': common_cost_price,
+                #     'price_info': item['salePrices'],
+                #     'image_filename': image_filename,
+                #     'image_content': image_content
+                # }
+                # product_data.append(product_info)
 
             # Массовая вставка или обновление данных
-            for product_info in product_data:
-                search_params = {'account': product_info['account'], "barcode": product_info['barcode'], "moy_sklad_product_number": product_info['moy_sklad_product_number'],
-                                 }
-                values_for_update = {
-                    "name": product_info['name'],
-                    "product_type": product_info['product_type'],
-                    "cost_price": product_info['cost_price'],
-                    'brand': product_info['brand'],
-                    "vendor": product_info['vendor']
-                }
-                product_obj_сort = ProductPrice.objects.update_or_create(
-                    account=product_info['account'],
-                    barcode=product_info['barcode'],
-                    moy_sklad_product_number=product_info['moy_sklad_product_number'],
-                    defaults=values_for_update
-                )
-                product_obj = product_obj_сort[0]
-                price_for_marketplace_from_moysklad(
-                    product_obj, product_info['price_info'], account_names)
-                if product_info['image_content']:
-                    product_obj.image.save(
-                        product_info['image_filename'], product_info['image_content'])
+            # for product_info in product_data:
+            #     search_params = {'account': product_info['account'], "barcode": product_info['barcode'], "moy_sklad_product_number": product_info['moy_sklad_product_number'],
+            #                      }
+            #     values_for_update = {
+            #         "name": product_info['name'],
+            #         "product_type": product_info['product_type'],
+            #         "cost_price": product_info['cost_price'],
+            #         'brand': product_info['brand'],
+            #         "vendor": product_info['vendor']
+            #     }
+            #     product_obj_сort = ProductPrice.objects.update_or_create(
+            #         account=product_info['account'],
+            #         barcode=product_info['barcode'],
+            #         moy_sklad_product_number=product_info['moy_sklad_product_number'],
+            #         defaults=values_for_update
+            #     )
+            #     product_obj = product_obj_сort[0]
+            #     price_for_marketplace_from_moysklad(
+            #         product_obj, product_info['price_info'], account_names)
+            #     if product_info['image_content']:
+            #         product_obj.image.save(
+            #             product_info['image_filename'], product_info['image_content'])
 
 
 # @sender_error_to_tg

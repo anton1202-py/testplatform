@@ -215,12 +215,13 @@ def picture_href_request(token_moy_sklad, api_url):
         token_moy_sklad - токен учетной записи
         api_url - URL со ссылкой
     """
+    time.sleep(1)
     headers = {
         'Authorization': f'Bearer {token_moy_sklad}',
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(url=api_url, headers=headers, timeout=20)
+    response = requests.get(url=api_url, headers=headers, timeout=100)
     link = ''
     if response.status_code == 200:
         data = response.json()
