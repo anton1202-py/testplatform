@@ -99,8 +99,16 @@ class PostingGoods(models.Model):
     Описывает модель оприходования товара на склад
     на площадке Мой Склад. Для подсчета себестоимости
     """
+    account = models.ForeignKey(
+        Account, related_name='posting_accounts', on_delete=models.CASCADE, verbose_name='Аккаунт', null=True, blank=True)
+    enter_number = models.CharField(
+        max_length=255, verbose_name="ID оприходования", null=True, blank=True)
+    position_number = models.CharField(
+        max_length=255, verbose_name="ID позиции", null=True, blank=True)
     product = models.ForeignKey(ProductPrice, related_name='postinggoods_product',
                                 on_delete=models.CASCADE, verbose_name='Продукт')
+    code = models.CharField(
+        max_length=255, verbose_name="Название товара в оприходовании", null=True, blank=True)
     receipt_date = models.DateTimeField(
         verbose_name="Дата поступления на склад")
     amount = models.IntegerField(verbose_name="Поступившее количество")

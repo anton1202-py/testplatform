@@ -11,7 +11,7 @@ from api_requests.moy_sklad import (get_assortiment_info,
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
 # from unit_economics.integrations import sender_error_to_tg
-from unit_economics.models import (ProductCostPrice,
+from unit_economics.models import (PostingGoods, ProductCostPrice,
                                    ProductForMarketplacePrice,
                                    ProductOzonPrice, ProductPrice)
 
@@ -248,54 +248,68 @@ def moy_sklad_enters_calculate():
 
         x = len(enters_list)
         print(len(enters_list))
-        for enter in enters_list[:2200]:
+        for enter in enters_list:
             enter_id = enter['id']
-            if 'moment' in enter:
-                enter_date = enter['moment']
-                print(enter_date)
-                positions = moy_sklad_positions_enter(token_ms, enter_id)
-                print(len(positions))
-                for position in positions:
-                    api_url = position['assortment']['meta']['href']
-                    assortiment_data = get_assortiment_info(
-                        token_ms, api_url)
-                    if assortiment_data:
-                        if assortiment_data['archived'] == False:
-                            moy_sklad_id = assortiment_data['id']
-                            quantity = position.get('quantity', 0)
-                            price = position.get('price', 0)
-                            overhead = position.get('overhead', 0)
-                            if 'code' in assortiment_data:
-                                article = assortiment_data['code']
-                                attributes = assortiment_data['attributes']
-                                for attribute in attributes:
-                                    if attribute['name'] == 'Бренд':
-                                        brand = attribute['value']
-
-                                if article not in enter_main_data:
-                                    enter_main_data[article] = {
-                                        'article_data':
-                                            {
-                                                'moy_sklad_id': moy_sklad_id,
-                                                # 'barcodes': barcodes,
-                                                'brand': brand
-                                            },
-                                        'enter_data': [
-                                            {
-                                                'date': enter_date,
-                                                'price': price,
-                                                'quantity': quantity,
-                                                'overhead': overhead
-                                            }]}
-                                else:
-                                    enter_main_data[article]['enter_data'].append({
-                                        'date': enter_date,
-                                        'price': price,
-                                        'quantity': quantity,
-                                        'overhead': overhead
-                                    })
-            x -= 1
-            print(x)
+            if PostingGoods.objects.filter(enter_number=enter_id).exists():
+                continue
+            else:
+                if 'moment' in enter:
+                    enter_date = enter['moment']
+                    print(enter_date)
+                    positions = moy_sklad_positions_enter(token_ms, enter_id)
+                    print(len(positions))
+                    for position in positions:
+                        position_id = position['id']
+                        if PostingGoods.objects.filter(position_number=position_id).exists():
+                            continue
+                        else:
+                            api_url = position['assortment']['meta']['href']
+                            assortiment_data = get_assortiment_info(
+                                token_ms, api_url)
+                            if assortiment_data:
+                                if assortiment_data['archived'] == False:
+                                    moy_sklad_id = assortiment_data['id']
+                                    quantity = position.get('quantity', 0)
+                                    price = position.get('price', 0)
+                                    overhead = position.get('overhead', 0)
+                                    if 'code' in assortiment_data:
+                                        article = assortiment_data['code']
+                                        if ProductPrice.objects.filter(moy_sklad_product_number=moy_sklad_id).exists():
+                                            product_obj = ProductPrice.objects.get(
+                                                moy_sklad_product_number=moy_sklad_id)
+                                            PostingGoods(
+                                                account=account,
+                                                enter_number=enter_id,
+                                                position_number=position_id,
+                                                product=product_obj,
+                                                code=article,
+                                                receipt_date=enter_date,
+                                                amount=quantity,
+                                                price=price,
+                                                costs=overhead
+                                            ).save()
+                                            # if article not in enter_main_data:
+                                            #     enter_main_data[article] = {
+                                            #         'article_data':
+                                            #             {
+                                            #                 'moy_sklad_id': moy_sklad_id
+                                            #             },
+                                            #         'enter_data': [
+                                            #             {
+                                            #                 'date': enter_date,
+                                            #                 'price': price,
+                                            #                 'quantity': quantity,
+                                            #                 'overhead': overhead
+                                            #             }]}
+                                            # else:
+                                            #     enter_main_data[article]['enter_data'].append({
+                                            #         'date': enter_date,
+                                            #         'price': price,
+                                            #         'quantity': quantity,
+                                            #         'overhead': overhead
+                                            #     })
+                x -= 1
+                print(x)
         main_retuned_dict[account] = enter_main_data
     return main_retuned_dict
 
