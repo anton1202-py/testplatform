@@ -202,6 +202,7 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
 # @sender_error_to_tg
 def moy_sklad_enters_calculate():
     """
+    Записывает поставки товаров Их Моего Склада в базу данных
     Считает поставки товара на Мой Склад.
 
     Возвращает словарь вида:
