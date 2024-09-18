@@ -811,4 +811,25 @@ class MarketplaceActionList(ListAPIView):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceActionSerializer
-    queryset = MarketplaceAction.objects.all()
+
+    def get_queryset(self):
+        queryset = MarketplaceAction.objects.all()
+
+        # Получаем параметры сортировки из запроса
+        user_id = self.request.query_params.get('user')
+        account_id = self.request.query_params.get('account')
+        platform_id = self.request.query_params.get('platform')
+
+        # Фильтруем по юзеру, если параметр указан
+        if user_id:
+            queryset = queryset.filter(account__user_id=user_id)
+
+        # Фильтруем по аккаунту, если параметр указан
+        if account_id:
+            queryset = queryset.filter(account_id=account_id)
+
+        # Фильтруем по платформе, если параметр указан
+        if platform_id:
+            queryset = queryset.filter(platform_id=platform_id)
+
+        return queryset
