@@ -620,8 +620,6 @@ def update_price_info_from_user_request(data_dict: dict):
     Обновляет цены на Мой склад и в БД, если пользователь отправил запрос
     {
         'user_id': user_id.
-        'account_id': account_id,
-        'platform_id': platform_id,
         'products_data': [
             {
                 'marketplaceproduct_id': marketplaceproduct_id,
@@ -633,8 +631,6 @@ def update_price_info_from_user_request(data_dict: dict):
     """
 
     user_id = data_dict.get('user_id', '')
-    account_id = data_dict.get('account_id', '')
-    platform_id = data_dict.get('platform_id', '')
     products_data = data_dict.get('products_data', '')
 
     for data in products_data:
@@ -643,8 +639,10 @@ def update_price_info_from_user_request(data_dict: dict):
         overhead = data.get('overhead', '')
         mp_product_obj = MarketplaceProduct.objects.get(
             id=marketplaceproduct_id)
+        platform_id = mp_product_obj.platform.id
         product_obj = mp_product_obj.product
-        account_obj = Account.objects.get(id=account_id)
+        account_obj = Account.objects.get(id=mp_product_obj.account.id)
+        account_id = account_obj.id
         moy_sklad_account = Account.objects.get(
             user=User.objects.get(id=user_id),
             platform=Platform.objects.get(

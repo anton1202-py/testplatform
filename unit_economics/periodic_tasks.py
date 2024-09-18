@@ -51,6 +51,18 @@ def moy_sklad_costprice_add_to_db():
     """
     Записывает себестоимость (методом оприходования) товара в базу данных
     """
+    dat = ProductPrice.objects.all().values('moy_sklad_product_number')
+    ms_ids = []
+
+    for i in dat:
+        print(i)
+        ms_ids.append(i['moy_sklad_product_number'])
+
+    for i in ms_ids:
+        x = ProductPrice.objects.filter(moy_sklad_product_number=i)
+        if len(x) > 1:
+            print(x)
+            x[0].delete()
     cost_price_data = moy_sklad_costprice_calculate()
     for account, cost_price_list in cost_price_data.items():
         for data in cost_price_list:

@@ -120,15 +120,13 @@ def moy_sklad_add_data_to_db():
 
                 if ProductPrice.objects.filter(
                         account=account,
-                        barcode=[list(barcode.values())[0]
-                                 for barcode in item.get('barcodes', [])],
                         moy_sklad_product_number=item.get('id', '')).exists():
                     ProductPrice.objects.filter(
                         account=account,
-                        barcode=[list(barcode.values())[0]
-                                 for barcode in item.get('barcodes', [])],
                         moy_sklad_product_number=item.get('id', '')).update(
                         name=item.get('name', ''),
+                        barcode=[list(barcode.values())[0]
+                                 for barcode in item.get('barcodes', [])],
                         cost_price=common_cost_price,
                         brand=brand,
                         vendor=item.get('article', '')
@@ -276,8 +274,14 @@ def moy_sklad_enters_calculate():
                                     if 'code' in assortiment_data:
                                         article = assortiment_data['code']
                                         if ProductPrice.objects.filter(moy_sklad_product_number=moy_sklad_id).exists():
+                                            print(
+                                                f'Записал в базу {moy_sklad_id} {article} {quantity} {price} {overhead}')
+                                            if len(ProductPrice.objects.filter(moy_sklad_product_number=moy_sklad_id)) > 1:
+                                                print(ProductPrice.objects.filter(
+                                                    moy_sklad_product_number=moy_sklad_id))
                                             product_obj = ProductPrice.objects.get(
                                                 moy_sklad_product_number=moy_sklad_id)
+
                                             PostingGoods(
                                                 account=account,
                                                 enter_number=enter_id,
