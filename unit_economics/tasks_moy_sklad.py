@@ -207,7 +207,7 @@ def moy_sklad_enters_calculate():
     {account:
         {code:
             {
-                'article_data': {'moy_sklad_id: moy_sklad_id, 'brand': brand}, 
+                'article_data': {'moy_sklad_id: moy_sklad_id}, 
                 'enter_data': {
                     [
                         {
@@ -271,7 +271,8 @@ def moy_sklad_enters_calculate():
                                     quantity = position.get('quantity', 0)
                                     price = position.get('price', 0)
                                     overhead = position.get('overhead', 0)
-                                    if 'code' in assortiment_data:
+
+                                    if 'code' in assortiment_data and quantity != 0 and price != 0:
                                         article = assortiment_data['code']
                                         if ProductPrice.objects.filter(moy_sklad_product_number=moy_sklad_id).exists():
                                             print(
@@ -362,9 +363,39 @@ def moy_sklad_costprice_calculate():
     """
     enters_data = moy_sklad_enters_calculate()
     stock_data = moy_sklad_stock_data()
-
+    enters_data = {}
     account_cost_price_data = {}
+    main_data = PostingGoods.objects.all()
+    for data in main_data:
+        inner_dict = {
+            'date': data.receipt_date,
+            'price': data.price,
+            'quantity': data.amount,
+            'overhead': data.costs
+        }
+        if data.account not in enters_data:
+            enters_data[data.account] = {
+                data.code: {
+                    'article_data': {
+                        'product': data.product
+                    },
+                    'enter_data': [inner_dict]
+                }
+            }
+        else:
+            if data.code not in enters_data[data.account]:
+                enters_data[data.account][data.code] = {
+                    'article_data': {
+                        'product': data.product
+                    },
+                    'enter_data': [inner_dict]
+                }
 
+            else:
+                if inner_dict not in enters_data[data.account][data.code]['enter_data']:
+                    enters_data[data.account][data.code]['enter_data'].append(
+                        inner_dict)
+    # print('enters_data', enters_data)
     for account, code_data in enters_data.items():
         code_list = []
         for code, article_info in code_data.items():
@@ -390,8 +421,8 @@ def moy_sklad_costprice_calculate():
 
             if amount > 0:
                 cost_price = (price + overhead) / (amount * 100)
-                inner_dict = {'moy_sklad_id': article_info['article_data']
-                              ['moy_sklad_id'], 'cost_price': cost_price}
+                inner_dict = {
+                    'product': article_info['article_data']['product'], 'cost_price': cost_price}
                 code_list.append(inner_dict)
         account_cost_price_data[account] = code_list
     return account_cost_price_data
