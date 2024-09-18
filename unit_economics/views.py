@@ -89,8 +89,9 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # yandex_comission_logistic_add_data_to_db()
         # moy_sklad_stock_data()
         # profitability_calculate(user_id=user.id)
-        # print('moy_sklad_costprice_add_to_db ')
+        print('moy_sklad_costprice_add_to_db ')
         moy_sklad_costprice_add_to_db()
+        print('Прошли moy_sklad_costprice_add_to_db ')
         # calculate_mp_price_with_profitability(user.id)
         # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
@@ -191,7 +192,7 @@ class TopSelectorsViewSet(GenericAPIView):
             goods_data = goods_data.filter(
                 Q(mp_product__account__id__in=accounts_list)).distinct()
             brands_data = brands_data.filter(
-                mp_product__account__id__in=platforms_list)
+                mp_product__account__id__in=accounts_list)
 
         if top_selection_brand:
             brands = top_selection_brand.split(',')

@@ -96,7 +96,7 @@ def moy_sklad_add_data_to_db():
 
                         for product_url, quantity in list_url_products:
                             response_url = requests.get(
-                                product_url, headers=headers)
+                                product_url, headers=headers, timeout=60)
 
                             if response_url.status_code == 200:
                                 cost_price_data = response_url.json()
@@ -254,9 +254,7 @@ def moy_sklad_enters_calculate():
             else:
                 if 'moment' in enter:
                     enter_date = enter['moment']
-                    print(enter_date)
                     positions = moy_sklad_positions_enter(token_ms, enter_id)
-                    print(len(positions))
                     for position in positions:
                         position_id = position['id']
                         if PostingGoods.objects.filter(position_number=position_id).exists():
@@ -275,11 +273,6 @@ def moy_sklad_enters_calculate():
                                     if 'code' in assortiment_data and quantity != 0 and price != 0:
                                         article = assortiment_data['code']
                                         if ProductPrice.objects.filter(moy_sklad_product_number=moy_sklad_id).exists():
-                                            print(
-                                                f'Записал в базу {moy_sklad_id} {article} {quantity} {price} {overhead}')
-                                            if len(ProductPrice.objects.filter(moy_sklad_product_number=moy_sklad_id)) > 1:
-                                                print(ProductPrice.objects.filter(
-                                                    moy_sklad_product_number=moy_sklad_id))
                                             product_obj = ProductPrice.objects.get(
                                                 moy_sklad_product_number=moy_sklad_id)
 
@@ -314,8 +307,8 @@ def moy_sklad_enters_calculate():
                                             #         'quantity': quantity,
                                             #         'overhead': overhead
                                             #     })
-                x -= 1
-                print(x)
+            x -= 1
+            print(x)
         main_retuned_dict[account] = enter_main_data
     return main_retuned_dict
 
@@ -342,7 +335,6 @@ def moy_sklad_stock_data():
         token_ms = account.authorization_fields['token']
         stocks_list = get_stock_info(token_ms)
         stocks_data = {}
-        print(len(stocks_list))
         for stock_data in stocks_list:
             if 'code' in stock_data:
                 code = stock_data['code']
@@ -350,8 +342,7 @@ def moy_sklad_stock_data():
                     stock = stock_data['stock']
                     stocks_data[code] = stock
         main_retuned_dict[account] = stocks_data
-    for i, j in main_retuned_dict.items():
-        print(j['ЭнергияACH2000'])
+
     # print(main_retuned_dict)
     return main_retuned_dict
 
@@ -395,7 +386,7 @@ def moy_sklad_costprice_calculate():
                 if inner_dict not in enters_data[data.account][data.code]['enter_data']:
                     enters_data[data.account][data.code]['enter_data'].append(
                         inner_dict)
-    # print('enters_data', enters_data)
+
     for account, code_data in enters_data.items():
         code_list = []
         for code, article_info in code_data.items():
@@ -420,7 +411,7 @@ def moy_sklad_costprice_calculate():
                         price = enter_data['price']
 
             if amount > 0:
-                cost_price = (price + overhead) / (amount * 100)
+                cost_price = (price + overhead/amount) / 100
                 inner_dict = {
                     'product': article_info['article_data']['product'], 'cost_price': cost_price}
                 code_list.append(inner_dict)

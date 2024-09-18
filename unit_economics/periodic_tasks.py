@@ -55,7 +55,6 @@ def moy_sklad_costprice_add_to_db():
     ms_ids = []
 
     for i in dat:
-        print(i)
         ms_ids.append(i['moy_sklad_product_number'])
 
     for i in ms_ids:
@@ -68,20 +67,14 @@ def moy_sklad_costprice_add_to_db():
         for data in cost_price_list:
             product = data['product']
             cost_price = data['cost_price']
-            if ProductPrice.objects.filter(
-                    account=account, id=product.id).exists():
-                prod_obj = ProductPrice.objects.filter(
-                    account=account, id=product.id)
-                if len(prod_obj) > 1:
-                    print(prod_obj)
-                prod_obj = prod_obj[0]
-                search_params = {'product': prod_obj}
-                values_for_update = {
-                    "cost_price": cost_price
-                }
-                ProductCostPrice.objects.update_or_create(
-                    defaults=values_for_update, **search_params
-                )
+            
+            search_params = {'product': product}
+            values_for_update = {
+                "cost_price": cost_price
+            }
+            ProductCostPrice.objects.update_or_create(
+                defaults=values_for_update, **search_params
+            )
 
 
 @app.task()
