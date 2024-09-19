@@ -288,7 +288,7 @@ def calculate_mp_price_with_profitability(user_id):
         if len(x) == 0:
             print('нет комиссии', prod)
     for product in mp_products_list:
-        if MarketplaceCommission.objects.filter(marketplace_product=prod).exists():
+        if MarketplaceCommission.objects.filter(marketplace_product=product).exists():
             if product.platform.name == 'OZON':
                 comission = product.marketproduct_comission.fbs_commission
                 logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
