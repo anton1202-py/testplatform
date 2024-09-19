@@ -93,7 +93,7 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # print('moy_sklad_costprice_add_to_db ')
         # moy_sklad_costprice_add_to_db()
         print('Прошли moy_sklad_costprice_add_to_db ')
-        calculate_mp_price_with_profitability(user.id)
+        profitability_calculate(user.id, overheads=0.2, profitability_group=None, costprice_flag='table')
         # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
