@@ -249,7 +249,9 @@ def moy_sklad_enters_calculate():
         print(len(enters_list))
         for enter in enters_list:
             enter_id = enter['id']
+            print(f'У поставки {enter_id} записей {len(PostingGoods.objects.filter(enter_number=enter_id))}')
             if PostingGoods.objects.filter(enter_number=enter_id).exists():
+                print('Должен пропустить')
                 continue
             else:
                 if 'moment' in enter:

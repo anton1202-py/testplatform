@@ -64,6 +64,7 @@ def moy_sklad_costprice_add_to_db():
             x[0].delete()
     cost_price_data = moy_sklad_costprice_calculate()
     for account, cost_price_list in cost_price_data.items():
+        print('len(cost_price_list)', len(cost_price_list))
         for data in cost_price_list:
             product = data['product']
             cost_price = data['cost_price']
@@ -72,6 +73,7 @@ def moy_sklad_costprice_add_to_db():
             values_for_update = {
                 "cost_price": cost_price
             }
+            print('Сохраняем с/с', product, cost_price)
             ProductCostPrice.objects.update_or_create(
                 defaults=values_for_update, **search_params
             )

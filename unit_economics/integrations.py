@@ -302,7 +302,7 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None):
             profitability__lte=10) & Q(profitability__gt=0)),
         count_between_0_and_minus_10=Count('id', filter=Q(
             profitability__lte=0) & Q(profitability__gt=-10)),
-        count_between_minus10_and_minus_20=Count('id', filter=Q(
+        count_between_minus_10_and_minus_20=Count('id', filter=Q(
             profitability__lte=-10) & Q(profitability__gt=-20)),
         count_below_minus_20=Count('id', filter=Q(profitability__lte=-20)),
     )
