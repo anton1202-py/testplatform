@@ -20,7 +20,8 @@ from core.enums import MarketplaceChoices
 from core.models import Account, Platform, User
 from unit_economics.integrations import (
     calculate_mp_price_with_incoming_profitability,
-    calculate_mp_price_with_profitability, profitability_calculate,
+    calculate_mp_price_with_profitability,
+    calculate_mp_profitability_with_incoming_price, profitability_calculate,
     save_overheds_for_mp_product, update_price_info_from_user_request)
 from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
                                    MarketplaceProduct,
@@ -89,10 +90,10 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # yandex_comission_logistic_add_data_to_db()
         # moy_sklad_stock_data()
         # profitability_calculate(user_id=user.id)
-        print('moy_sklad_costprice_add_to_db ')
-        moy_sklad_costprice_add_to_db()
+        # print('moy_sklad_costprice_add_to_db ')
+        # moy_sklad_costprice_add_to_db()
         print('Прошли moy_sklad_costprice_add_to_db ')
-        # calculate_mp_price_with_profitability(user.id)
+        calculate_mp_price_with_profitability(user.id)
         # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
@@ -286,17 +287,18 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Повторяющиеся фильтры в верху страницы и вверху таблицы.
         table_platform_id = self.request.query_params.get('table_platform_id')
-
+        
         filter_platform_id = ''
 
         # В приоритете верхние фильтры
         if top_selection_platform_id:
             filter_platform_id = top_selection_platform_id
         elif table_platform_id:
+            
             filter_platform_id = table_platform_id
 
         if filter_platform_id:
-            platforms_list = filter_platform_id.split(',')
+            platforms_list = list(map(int, filter_platform_id.split(',')))
             queryset = queryset.filter(platform__id__in=platforms_list)
         if top_selection_account_id:
             accounts_list = top_selection_account_id.split(',')
@@ -323,22 +325,32 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         calculate_product_price = request.query_params.get(
             'calculate_product_price')
         action_id = request.query_params.get('action_id')
+        costprice_flag = request.query_params.get('costprice_flag')
 
         if profitability_group:
+            
             result = profitability_calculate(
-                request.user.id, profitability_group=profitability_group)
+                request.user.id, profitability_group=profitability_group, costprice_flag=costprice_flag)
             queryset = queryset.filter(
                 id__in=[p.id for p in result['filtered_products']])
 
+        # Фильтр для Пересчита цены на основании входящей рентабельности. Сохраняет цену и рентабельность
         if calculate_product_price:
             updated_products = calculate_mp_price_with_incoming_profitability(
                 float(calculate_product_price), queryset)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_products])
+            
         # Фильтр по id акции
         if action_id:
             queryset = queryset.filter(
                 product_in_action__action__id=action_id).distinct()
+            # Пересчитывает рентабельность и прибыль на основании входящей цены. И сохраняет цену и рентабельность
+            updated_profitability = calculate_mp_profitability_with_incoming_price(action_id,
+                queryset, costprice_flag=costprice_flag)
+            queryset = MarketplaceProduct.objects.filter(
+                id__in=[p.id for p in updated_profitability])
+
         page = self.paginate_queryset(queryset)
 
         if page is not None:
@@ -453,91 +465,6 @@ class ProfitabilityAPIView(GenericAPIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# class ProfitabilityAPIView(GenericAPIView):
-#     """
-#     API для расчета рентабельности и сохранения накладных расходов.
-#     """
-#     serializer_class = ProfitabilityMarketplaceProductSerializer
-#
-#     def get(self, request, *args, **kwargs):
-#         """
-#         GET-запрос для расчета рентабельности всех товаров пользователя (данные для графика).
-#         """
-#         user_id = self.kwargs.get('user_id')
-#         category = request.query_params.get('category')
-#
-#         try:
-#             result = profitability_calculate(user_id)
-#             if category:
-#                 products = result['products_by_profitability'].get(
-#                     category, [])
-#                 return Response(products, status=status.HTTP_200_OK)
-#             else:
-#                 return Response(result, status=status.HTTP_200_OK)
-#         except User.DoesNotExist:
-#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-#
-#     def post(self, request, *args, **kwargs):
-#         """
-#         POST-запрос для обновления накладных расходов и пересчета рентабельности.
-#         Входящие данные:
-#         mp_product_dict: словарь типа {mp_product_id: product_overheads}
-#         mp_product_id - id продлукта из таблицы MarketplaceProduct
-#         product_overheads - накладные расходы в формате float (например 0.2)
-#         """
-#         overheads_data = request.data.get('overheads_data', {})
-#         user_id = request.data.get('user_id')
-#
-#         if not overheads_data or not user_id:
-#             return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         try:
-#             # Сохраняем накладные расходы
-#             save_overheds_for_mp_product(overheads_data)
-#
-#             # Пересчитываем рентабельность
-#             result = profitability_calculate(user_id)
-#
-#             return Response(result, status=status.HTTP_200_OK)
-#         except Exception as e:
-#             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class ProductsByCategoryAPIView(APIView):
-#     def get(self, request, user_id):
-#         category = request.query_params.get('category')
-#         if not category:
-#             return Response({"error": "Category parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         try:
-#             user = User.objects.get(id=user_id)
-#         except User.DoesNotExist:
-#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-#
-#         filter_conditions = {
-#             'above_20': Q(mp_profitability__profitability__gt=20),
-#             'between_10_and_20': Q(mp_profitability__profitability__lt=20) & Q(mp_profitability__profitability__gt=10),
-#             'between_0_and_10': Q(mp_profitability__profitability__gt=0) & Q(mp_profitability__profitability__lt=10),
-#             'between_0_and_minus_10': Q(mp_profitability__profitability__lt=0) & Q(mp_profitability__profitability__gt=-10),
-#             'between_minus10_and_minus_20': Q(mp_profitability__profitability__gt=-20) & Q(mp_profitability__profitability__lt=-10),
-#             'below_minus_20': Q(mp_profitability__profitability__lt=-20),
-#         }
-#
-#         if category not in filter_conditions:
-#             return Response({"error": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         products = MarketplaceProduct.objects.filter(
-#             account__user=user
-#         ).filter(
-#             filter_conditions[category]
-#         ).select_related(
-#             'product', 'product__price_product', 'marketproduct_comission', 'marketproduct_logistic', 'mp_profitability'
-#         )
-#
-#         serializer = MarketplaceProductSerializer(products, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 class UpdatePriceView(GenericAPIView):
     """
     Представление для обновления цен на товары и накладных расходов.
@@ -577,76 +504,6 @@ class CalculateMarketplacePriceView(GenericAPIView):
         user_id = request.user.id
         calculate_mp_price_with_profitability(user_id)
         return Response({"detail": "Цены успешно обновлены."})
-
-
-# class MarketplaceActionListView(APIView):
-#     """На входе надо список id товаров отфильтрованных по селекторам в body
-#        пример "product_ids": [1977, 617, 618, 4242].
-#        Дополнительно принимает action_id, что бы отдать данные для выбранной акции
-#     """
-#     serializer_class = MarketplaceActionSerializer
-#     permission_classes = [IsAuthenticated]
-#
-#     def get_queryset(self):
-#         # Получаем текущую дату
-#         today = timezone.now().date()
-#         # Фильтруем акции, которые еще не закончились
-#         queryset = MarketplaceAction.objects.filter(date_finish__gt=today)
-#         # Фильтрация по платформе, если параметр передан
-#         platform_id = self.request.query_params.get('platform')
-#         if platform_id:
-#             queryset = queryset.filter(platform__id=platform_id)
-#         # Фильтрация по названию акции, если параметр передан
-#         action_name = self.request.query_params.get('action_name')
-#         if action_name:
-#             queryset = queryset.filter(action_name__icontains=action_name)
-#         # Сортировка по платформе и названию акции
-#         queryset = queryset.order_by('platform_id', 'action_name')
-#
-#         return queryset
-#
-#     def post(self, request, *args, **kwargs):
-#         today = timezone.now().date()
-#         product_ids = request.data.get('product_ids')
-#         action_id = request.data.get('action_id')
-#
-#         if not product_ids:
-#             return Response({"detail": "Нужно id товаров"}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         try:
-#             product_ids = [int(pid) for pid in product_ids]
-#         except ValueError:
-#             return Response({"detail": "Не верный формат"}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         # Получаем ID акций, содержащих указанные товары
-#         actions_ids = MarketplaceProductInAction.objects.filter(
-#             marketplace_product__id__in=product_ids
-#         ).values_list('action_id', flat=True).distinct()
-#
-#         # Фильтруем акции, которые еще не закончились и имеют указанные ID
-#         actions = MarketplaceAction.objects.filter(
-#             id__in=actions_ids,
-#             date_finish__gt=today
-#         ).prefetch_related('account__platform')  # Здесь добавляем правильные связи
-#         if action_id:
-#             actions = actions.filter(id=action_id)
-#         filtered_actions = []
-#         for action in actions:
-#             filtered_products = action.action.filter(
-#                 marketplace_product__id__in=product_ids)
-#             if filtered_products.exists():
-#                 action_data = {
-#                     'platform': action.platform.id,
-#                     'account': action.account.id,
-#                     'action_number': action.action_number,
-#                     'action_name': action.action_name,
-#                     'date_start': action.date_start,
-#                     'date_finish': action.date_finish,
-#                     'products': MarketplaceProductInActionSerializer(filtered_products, many=True).data
-#                 }
-#                 filtered_actions.append(action_data)
-#
-#         return Response(filtered_actions)
 
 
 class MarketplaceActionListView(APIView):
@@ -694,42 +551,6 @@ class MarketplaceActionListView(APIView):
             }
             platform_data['actions'].append(action_data)
         return Response(platform_data, status=status.HTTP_200_OK)
-
-# class MarketplaceActionListView(ListAPIView):
-#     """Все акции и товары в них. Апишка принимает параметр платформы пример - GET /marketplace-actions/?platform=1
-#         + параметр название акции action_name и отдаёт отсортированные данные по платформе.
-#         /marketplace-actions/?product_ids=1,2,3
-#     """
-#     serializer_class = MarketplaceActionSerializer
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request, *args, **kwargs):
-#         # Получаем текущую дату
-#         today = timezone.now().date()
-#         # Получаем список ID товаров от фронта
-#         product_ids = request.query_params.get('product_ids')
-#         if not product_ids:
-#             return Response({"detail": "Нужно id товаров"}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         try:
-#             product_ids = list(map(int, product_ids.split(',')))
-#         except ValueError:
-#             return Response({"detail": "Не верный формат"}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         # Получаем ID акций, содержащих указанные товары
-#         actions_ids = MarketplaceProductInAction.objects.filter(
-#             marketplace_product__id__in=product_ids   #,status=True  # Надо ли товары учасвствующие в акции?
-#         ).values_list('action_id', flat=True).distinct()
-#
-#         # Фильтруем акции, которые еще не закончились и имеют указанные ID
-#         actions = MarketplaceAction.objects.filter(
-#             id__in=actions_ids,
-#             date_finish__gt=today
-#         )
-#
-#         # Сериализация и возврат данных
-#         serializer = self.serializer_class(actions, many=True)
-#         return Response(serializer.data)
 
 
 class CalculateMPPriceView(APIView):
@@ -793,17 +614,6 @@ class UserIdView(APIView):
         user_id = request.user.id
         return Response({'user_id': user_id})
 
-# class MarketplaceCommissionViewSet(viewsets.ReadOnlyModelViewSet):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = MarketplaceCommissionSerializer
-#
-#     def get_queryset(self):
-#         # Получаем все комиссии, возможна фильтрация по товару
-#         product_id = self.request.query_params.get('product')
-#         if product_id:
-#             return MarketplaceCommission.objects.filter(marketplace_product__product_id=product_id)
-#         return MarketplaceCommission.objects.none()
-
 
 class MarketplaceActionList(ListAPIView):
     """
@@ -811,25 +621,4 @@ class MarketplaceActionList(ListAPIView):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceActionSerializer
-
-    def get_queryset(self):
-        queryset = MarketplaceAction.objects.all()
-
-        # Получаем параметры сортировки из запроса
-        user_id = self.request.query_params.get('user')
-        account_id = self.request.query_params.get('account')
-        platform_id = self.request.query_params.get('platform')
-
-        # Фильтруем по юзеру, если параметр указан
-        if user_id:
-            queryset = queryset.filter(account__user_id=user_id)
-
-        # Фильтруем по аккаунту, если параметр указан
-        if account_id:
-            queryset = queryset.filter(account_id=account_id)
-
-        # Фильтруем по платформе, если параметр указан
-        if platform_id:
-            queryset = queryset.filter(platform_id=platform_id)
-
-        return queryset
+    queryset = MarketplaceAction.objects.all()
