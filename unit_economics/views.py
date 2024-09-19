@@ -616,8 +616,44 @@ class UserIdView(APIView):
 
 class MarketplaceActionList(ListAPIView):
     """
-    Выводит список акций.
+    Выводит список акций, в которых участвуют наши товары.
     """
     permission_classes = [IsAuthenticated]
     serializer_class = MarketplaceActionSerializer
-    queryset = MarketplaceAction.objects.all()
+
+    def get_queryset(self):
+        today = timezone.now().date()
+        # Получаем параметры из запроса
+        user_id = self.request.query_params.get('user_id')
+        account_id = self.request.query_params.get('account_id')
+        platform_id = self.request.query_params.get('platform_id')
+        # Фильтруем акции, которые ещё не закончились
+        queryset = MarketplaceAction.objects.filter(
+            id__in=MarketplaceProductInAction.objects.values_list('action_id', flat=True).distinct(),
+            date_finish__gte=today)
+        if user_id:
+            queryset = queryset.filter(account__user_id=user_id)
+
+        if account_id:
+            queryset = queryset.filter(account_id=account_id)
+
+        if platform_id:
+            queryset = queryset.filter(platform_id=platform_id)
+
+        return queryset
+
+
+class UpdateMarketplaceProductFlag(APIView):
+    """
+    Представление для обновления флага change_price_flag на false для списка товаров
+    """
+    def post(self, request, *args, **kwargs):
+        product_ids = request.data.get('product_ids', [])
+        if not product_ids:
+            return Response({"detail": "Не передан список товаров"}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_count = MarketplaceProduct.objects.filter(id__in=product_ids).update(change_price_flag=False)
+
+        return Response({"detail": f"Флаг change_price_flag обновлен на false для {updated_count} товара/ов"},
+                        status=status.HTTP_200_OK)
+
