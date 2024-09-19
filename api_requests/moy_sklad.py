@@ -142,6 +142,7 @@ def get_assortiment_info(TOKEN_MY_SKLAD, api_url):
         else:
             message = f'Ошибка при вызове метода {api_url}: {response.status_code}. {response.text}'
             print(message)
+            return None
     except requests.exceptions.RequestException as e:
         print(f"Ошибка при выполнении запроса: {e}")
         return None

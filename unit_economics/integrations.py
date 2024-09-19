@@ -407,7 +407,6 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                                           ) / (1 - profitability - overheads)), 2)
                     common_profit = profitability * common_price
                     enter_profit = profitability * enter_price
-                    print('Перед сохранением')
                     profit_obj.profitability = profitability
                     profit_obj.profit = common_profit
                     profit_obj.save()

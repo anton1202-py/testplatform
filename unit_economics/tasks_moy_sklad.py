@@ -249,6 +249,8 @@ def moy_sklad_enters_calculate():
         print(len(enters_list))
         for enter in enters_list:
             enter_id = enter['id']
+            x -= 1
+            print(x)
             print(f'У поставки {enter_id} записей {len(PostingGoods.objects.filter(enter_number=enter_id))}')
             if PostingGoods.objects.filter(enter_number=enter_id).exists():
                 print('Должен пропустить')
@@ -309,8 +311,6 @@ def moy_sklad_enters_calculate():
                                             #         'quantity': quantity,
                                             #         'overhead': overhead
                                             #     })
-            x -= 1
-            print(x)
         main_retuned_dict[account] = enter_main_data
     return main_retuned_dict
 
