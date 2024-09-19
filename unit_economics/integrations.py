@@ -381,18 +381,18 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
                 overheads = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).overheads
                 profitability = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).profitability
-                if costprice_flag == 'table':
-                    cost_price = product.product.cost_price
-                elif costprice_flag == 'enter':
-                    if ProductCostPrice.objects.filter(
-                            product=product.product).exists():
-                        cost_price = ProductCostPrice.objects.get(
-                            product=product.product).cost_price
-                    else:
-                        cost_price = 0
+                common_product_cost_price = product.product.cost_price
+                
+                cost_price = product.product.cost_price
+                
+                if ProductCostPrice.objects.filter(
+                        product=product.product).exists():
+                    profit_product_cost_price = ProductCostPrice.objects.get(
+                        product=product.product).cost_price
+                else:
+                    profit_product_cost_price = 0
                 if not profitability:
                     profitability=0
-                print(incoming_profitability, profitability)
                 if incoming_profitability * 100 > profitability:
                     profitability = incoming_profitability
 
@@ -406,8 +406,11 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                     # Цена на основе себестоимости по оприходованию
                     enter_price = round(((profit_product_cost_price + comission + logistic_cost
                                           ) / (1 - profitability - overheads)), 2)
+                    if costprice_flag == 'table':
+                        common_profit = profitability * common_price
+                    elif costprice_flag == 'enter':
+                        common_profit = profitability * enter_price
                     common_profit = profitability * common_price
-                    enter_profit = profitability * enter_price
                     profit_obj.profitability = profitability
                     profit_obj.profit = common_profit
                     profit_obj.save()
