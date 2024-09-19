@@ -343,7 +343,7 @@ def calculate_mp_price_with_profitability(user_id):
             products_to_create)
 
 
-def calculate_mp_price_with_incoming_profitability(incoming_profitability: float, product_list: list):
+def calculate_mp_price_with_incoming_profitability(incoming_profitability: float, product_list: list, costprice_flag='table'):
     """
     Расчет цены товара на маркетплейсе на основе рентабельности.
     Если рентабельность товара в базе данных меньше, чем входящая рентабельность,
@@ -360,7 +360,6 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
     incoming_profitability = incoming_profitability
     products_to_update = []
     products_to_create = []
-    print(len(product_list))
     for mp_product in product_list:
         mp_products_list = MarketplaceProduct.objects.filter(id=mp_product.id).select_related(
             'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
@@ -382,13 +381,15 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
                 overheads = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).overheads
                 profitability = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).profitability
-                common_product_cost_price = product.product.cost_price
-                if ProductCostPrice.objects.filter(
-                        product=product.product).exists():
-                    profit_product_cost_price = ProductCostPrice.objects.get(
-                        product=product.product).cost_price
-                else:
-                    profit_product_cost_price = 0
+                if costprice_flag == 'table':
+                    cost_price = product.product.cost_price
+                elif costprice_flag == 'enter':
+                    if ProductCostPrice.objects.filter(
+                            product=product.product).exists():
+                        cost_price = ProductCostPrice.objects.get(
+                            product=product.product).cost_price
+                    else:
+                        cost_price = 0
                 if not profitability:
                     profitability=0
                 print(incoming_profitability, profitability)

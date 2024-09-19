@@ -328,7 +328,6 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         costprice_flag = request.query_params.get('costprice_flag')
 
         if profitability_group:
-            
             result = profitability_calculate(
                 request.user.id, profitability_group=profitability_group, costprice_flag=costprice_flag)
             queryset = queryset.filter(
@@ -337,10 +336,10 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         # Фильтр для Пересчита цены на основании входящей рентабельности. Сохраняет цену и рентабельность
         if calculate_product_price:
             updated_products = calculate_mp_price_with_incoming_profitability(
-                float(calculate_product_price), queryset)
+                float(calculate_product_price), queryset, costprice_flag=costprice_flag)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_products])
-            
+
         # Фильтр по id акции
         if action_id:
             queryset = queryset.filter(
