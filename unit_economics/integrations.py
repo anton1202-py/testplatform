@@ -357,8 +357,10 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
         mp_products_list - список объектов модели MarketplaceProduct
 
     """
+    incoming_profitability = incoming_profitability
     products_to_update = []
     products_to_create = []
+    print(len(product_list))
     for mp_product in product_list:
         mp_products_list = MarketplaceProduct.objects.filter(id=mp_product.id).select_related(
             'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
@@ -378,8 +380,8 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                 comission = product.marketproduct_comission.fbs_commission
                 logistic_cost = product.marketproduct_logistic.cost_logistic
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
-                overheads = product.mp_profitability.overheads
-                profitability = product.mp_profitability.profitability
+                overheads = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).overheads
+                profitability = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).profitability
                 common_product_cost_price = product.product.cost_price
                 if ProductCostPrice.objects.filter(
                         product=product.product).exists():
@@ -387,8 +389,10 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                         product=product.product).cost_price
                 else:
                     profit_product_cost_price = 0
-
-                if incoming_profitability > profitability:
+                if not profitability:
+                    profitability=0
+                print(incoming_profitability, profitability)
+                if incoming_profitability * 100 > profitability:
                     profitability = incoming_profitability
 
                     profit_obj = ProfitabilityMarketplaceProduct.objects.get(mp_product=product)
@@ -403,7 +407,7 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                                           ) / (1 - profitability - overheads)), 2)
                     common_profit = profitability * common_price
                     enter_profit = profitability * enter_price
-
+                    print('Перед сохранением')
                     profit_obj.profitability = profitability
                     profit_obj.profit = common_profit
                     profit_obj.save()
