@@ -368,8 +368,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             print('Я перед суриализатор')
             serializer = self.get_serializer(page, many=True)
             print('Я после суриализатор')
-            for d in serializer:
-                print(d)
+            
             print('serializer', serializer.data)
             return self.get_paginated_response(serializer.data)
 
