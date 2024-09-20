@@ -233,7 +233,7 @@ def wb_action_article_price_to_db(account, actions_data, platform, wb_token):
                 if 'price' in action:
                     product_price = action['price']
                     status = action['inAction']
-                    search_params = {'action': action,
+                    search_params = {'action': data,
                                      'marketplace_product': marketplace_product}
                     values_for_update = {
                         "product_price": product_price,
