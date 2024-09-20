@@ -195,6 +195,8 @@ def profitability_calculate_only(queryset, costprice_flag='table'):
                                 logistic_cost - comission - (overheads * price)), 2)
                 
                 profitability = round(((profit / price) * 100), 2)
+            else:
+                print(product, price)
                 
 
                 # Добавляем фильтрацию по группе рентабельности
