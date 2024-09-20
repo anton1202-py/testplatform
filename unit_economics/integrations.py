@@ -148,6 +148,7 @@ def profitability_calculate_only(queryset, costprice_flag='table'):
 
     for product in mp_products_list:
         try:
+            price = 0
             if product.platform.name == 'OZON':
                 account = product.account
                 price = ProductOzonPrice.objects.get(
