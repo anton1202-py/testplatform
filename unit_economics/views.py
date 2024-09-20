@@ -22,6 +22,7 @@ from unit_economics.integrations import (
     calculate_mp_price_with_incoming_profitability,
     calculate_mp_price_with_profitability,
     calculate_mp_profitability_with_incoming_price, profitability_calculate,
+    profitability_calculate_only,
     save_overheds_for_mp_product, update_price_info_from_user_request)
 from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
                                    MarketplaceProduct,
@@ -294,7 +295,6 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if top_selection_platform_id:
             filter_platform_id = top_selection_platform_id
         elif table_platform_id:
-            
             filter_platform_id = table_platform_id
 
         if filter_platform_id:
@@ -306,11 +306,9 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if top_selection_brand:
             brands = top_selection_brand.split(',')
             queryset = queryset.filter(product__brand__in=brands)
-
         if top_selection_product_name:
             products_list = top_selection_product_name.split(',')
             queryset = queryset.filter(product__id__in=products_list)
-
         # Добавляем prefetch_related для акции
         queryset = queryset.prefetch_related(
             Prefetch('product_in_action',
@@ -320,21 +318,30 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-
         profitability_group = request.query_params.get('profitability_group')
         calculate_product_price = request.query_params.get(
             'calculate_product_price')
         action_id = request.query_params.get('action_id')
         costprice_flag = request.query_params.get('costprice_flag')
+        price_toggle = request.query_params.get('price_toggle')
 
         if profitability_group:
+            # Срабатывает, когда нажимают на бар диаграммы, чтобы отфильтровать по нему товары
             result = profitability_calculate(
                 request.user.id, profitability_group=profitability_group, costprice_flag=costprice_flag)
             queryset = queryset.filter(
                 id__in=[p.id for p in result['filtered_products']])
+        
+        if price_toggle:
+            # Срабатывает, когда переключатель ЦЕНА в положении МОЙ СКЛАД
+            result = profitability_calculate_only(
+                queryset, costprice_flag=costprice_flag)
+            queryset = MarketplaceProduct.objects.filter(
+                id__in=[p.id for p in result])
 
-        # Фильтр для Пересчита цены на основании входящей рентабельности. Сохраняет цену и рентабельность
+        # Фильтр для Пересчета цены на основании входящей рентабельности. Сохраняет цену и рентабельность
         if calculate_product_price:
+            # Срабатывает, когда переключатель ЦЕНА в положении ПО УРОВНЮ РЕНТАБЕЛЬНОСТИ
             updated_products = calculate_mp_price_with_incoming_profitability(
                 float(calculate_product_price), queryset, costprice_flag=costprice_flag)
             queryset = MarketplaceProduct.objects.filter(
@@ -342,6 +349,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Фильтр по id акции
         if action_id:
+            # Срабатывает, когда переключатель нужно получить товары в АКЦИИ с номер action_id
             queryset = queryset.filter(
                 product_in_action__action__id=action_id).distinct()
             # Пересчитывает рентабельность и прибыль на основании входящей цены. И сохраняет цену и рентабельность
@@ -647,6 +655,7 @@ class UpdateMarketplaceProductFlag(APIView):
     """
     def post(self, request, *args, **kwargs):
         product_ids = request.data.get('product_ids', [])
+        print(product_ids)
         if not product_ids:
             return Response({"detail": "Не передан список товаров"}, status=status.HTTP_400_BAD_REQUEST)
 
