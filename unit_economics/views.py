@@ -371,6 +371,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if page is not None:
             print('Я перед суриализатор')
             serializer = self.get_serializer(page, many=True)
+            print('Я после суриализатор')
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
