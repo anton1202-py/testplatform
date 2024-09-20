@@ -369,8 +369,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             serializer = self.get_serializer(page, many=True)
             print('Я после суриализатор')
             
-            print('serializer', serializer.data)
-            x = serializer.data[6:10]
+            x = serializer.data[11:100]
             for i in x:
                 print('**************************')
                 print(i)
