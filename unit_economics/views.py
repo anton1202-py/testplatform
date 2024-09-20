@@ -337,6 +337,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             # Срабатывает, когда переключатель ЦЕНА в положении МОЙ СКЛАД
             result = profitability_calculate_only(
                 queryset, costprice_flag=costprice_flag)
+            print('result', result)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in result])
 
