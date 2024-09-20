@@ -630,6 +630,7 @@ def update_price_info_from_user_request(data_dict: dict):
             profitability_obj.save()
             changer_profitability_calculate(profitability_obj.mp_product)
         if new_price:
+            new_price = new_price * 100
             productprice_obj = ProductForMarketplacePrice.objects.get(
                 product=product_obj)
             if platform_id == 1:
