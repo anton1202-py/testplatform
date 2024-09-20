@@ -631,7 +631,7 @@ def update_price_info_from_user_request(data_dict: dict):
             profitability_obj.save()
             changer_profitability_calculate(profitability_obj.mp_product)
         if new_price:
-            new_price = new_price * 100
+            
             productprice_obj = ProductForMarketplacePrice.objects.get(
                 product=product_obj)
             if platform_id == 1:
@@ -647,6 +647,7 @@ def update_price_info_from_user_request(data_dict: dict):
                 ozonproductprice_obj.save()
             account_name = Account.objects.get(id=account_id).name
             if product_obj.moy_sklad_product_number:
+                new_price = new_price * 100
                 change_product_price(moy_sklad_token, platform_id, account_name,
                                      new_price, product_obj.moy_sklad_product_number)
                 mp_product_obj.change_price_flag = True
