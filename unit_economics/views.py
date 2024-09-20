@@ -470,8 +470,6 @@ class UpdatePriceView(GenericAPIView):
     Обновляет цены на Мой склад и в БД, если пользователь отправил запрос
     {
         'user_id': user_id.
-        'account_id': account_id,
-        'platform_name': platform_name,
         'products_data': [
             {
                 'marketplaceproduct_id': marketplaceproduct_id,
