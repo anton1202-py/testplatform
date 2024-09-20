@@ -69,16 +69,16 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
     usual_price = serializers.FloatField(
         source='mp_product_profit_price.usual_price', read_only=True)
     actions = serializers.SerializerMethodField()
-    print('cost_price', cost_price)
-    print('posting_costprice', posting_costprice)
-    print('rrc', rrc)
-    print('price', price)
-    print('logistic_cost', logistic_cost)
-    print('profit_price', profit_price)
-    print('profit_price', usual_price)
-    print('profitability', profitability)
-    print('profit', profit)
-    print('profitability', profitability)
+    # print('cost_price', cost_price)
+    # print('posting_costprice', posting_costprice)
+    # print('rrc', rrc)
+    # print('price', price)
+    # print('logistic_cost', logistic_cost)
+    # print('profit_price', profit_price)
+    # print('profit_price', usual_price)
+    # print('profitability', profitability)
+    # print('profit', profit)
+    # print('profitability', profitability)
     class Meta:
         model = MarketplaceProduct
         fields = [
