@@ -368,6 +368,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
+        print('serializer.data', serializer.data)
         return Response(serializer.data)
 
 
