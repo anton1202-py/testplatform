@@ -224,7 +224,6 @@ def wb_action_article_price_to_db(account, actions_data, platform, wb_token):
     for data in actions_data:
         action_data = wb_actions_product_price_info(
             wb_token, data.action_number)
-        print('action_data', action_data)
         if action_data:
             for action in action_data:
                 nom_id = action['id']

@@ -87,9 +87,7 @@ def action_article_price_to_db():
     accounts = Account.objects.all()
     for account in accounts:
         platform = account.platform
-        print(platform)
         if platform.name == 'Wildberries':
-            print('В ВБ')
             wb_token = account.authorization_fields['token']
             wb_action_data_to_db()
             actions_data = MarketplaceAction.objects.filter(
