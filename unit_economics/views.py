@@ -338,6 +338,8 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             result = profitability_calculate_only(
                 queryset, costprice_flag=costprice_flag)
             print('result', result)
+            for i in result:
+                print(i)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in result])
             print('queryset', queryset)
