@@ -337,13 +337,9 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             # Срабатывает, когда переключатель ЦЕНА в положении МОЙ СКЛАД
             result = profitability_calculate_only(
                 queryset, costprice_flag=costprice_flag)
-            print('result', result)
-            for i in result:
-                print(i)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in result])
-            print('queryset', queryset)
-
+           
         # Фильтр для Пересчета цены на основании входящей рентабельности. Сохраняет цену и рентабельность
         if calculate_product_price:
             # Срабатывает, когда переключатель ЦЕНА в положении ПО УРОВНЮ РЕНТАБЕЛЬНОСТИ
@@ -376,6 +372,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
+        print('serializer', serializer)
         print('serializer.data', serializer.data)
         return Response(serializer.data)
 
