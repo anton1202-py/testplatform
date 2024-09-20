@@ -230,13 +230,14 @@ def wb_action_article_price_to_db(account, actions_data, platform, wb_token):
                 marketplace_product = MarketplaceProduct.objects.filter(
                     account=account, platform=platform, sku=nom_id)[0]
                 action = data
-                product_price = action['price']
-                status = action['inAction']
-                search_params = {'action': action,
-                                 'marketplace_product': marketplace_product}
-                values_for_update = {
-                    "product_price": product_price,
-                    "status": status
-                }
-                MarketplaceProductInAction.objects.update_or_create(
-                    defaults=values_for_update, **search_params)
+                if 'price' in action:
+                    product_price = action['price']
+                    status = action['inAction']
+                    search_params = {'action': action,
+                                     'marketplace_product': marketplace_product}
+                    values_for_update = {
+                        "product_price": product_price,
+                        "status": status
+                    }
+                    MarketplaceProductInAction.objects.update_or_create(
+                        defaults=values_for_update, **search_params)
