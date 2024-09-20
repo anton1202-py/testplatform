@@ -131,10 +131,7 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
 
     def get_actions(self, obj):
         # Получаем только активные акции
-        print('obj', obj)
-        MarketplaceProductInAction.objects.filter(marketplace_product=obj)
         product_in_actions = obj.product_in_action.filter(action__date_finish__gte=timezone.now().date(), status=True)
-        print('product_in_actions', product_in_actions)
         return MarketplaceProductInActionSerializer(product_in_actions, many=True).data
 
 

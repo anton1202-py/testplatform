@@ -299,7 +299,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             filter_platform_id = table_platform_id
 
         if filter_platform_id:
-            platforms_list = list(map(int, filter_platform_id.split(',')))
+            platforms_list = filter_platform_id.split(',')
             queryset = queryset.filter(platform__id__in=platforms_list)
         if top_selection_account_id:
             accounts_list = top_selection_account_id.split(',')
@@ -340,6 +340,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             print('result', result)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in result])
+            print('queryset', queryset)
 
         # Фильтр для Пересчета цены на основании входящей рентабельности. Сохраняет цену и рентабельность
         if calculate_product_price:
