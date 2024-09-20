@@ -362,10 +362,14 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
                 queryset, costprice_flag=costprice_flag)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_profitability])
+        
+        print('Я перед page')
 
         page = self.paginate_queryset(queryset)
+        print('Я после page')
 
         if page is not None:
+            print('Я перед суриализатор')
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
