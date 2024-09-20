@@ -117,6 +117,10 @@ def moy_sklad_add_data_to_db():
                 else:
                     cost_price = None
                 common_cost_price = cost_price/100
+                if cost_price:
+                    common_cost_price = cost_price/100
+                else:
+                    common_cost_price = 0
 
                 if ProductPrice.objects.filter(
                         account=account,
