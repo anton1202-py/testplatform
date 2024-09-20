@@ -196,3 +196,4 @@ def wb_actions_product_price_info(TOKEN_WB, action_id):
     else:
         message = f'Ошибка при вызовае метода {api_url}: {response.status_code}. {response.text}'
         print(message)
+        return None
