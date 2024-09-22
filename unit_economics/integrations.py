@@ -217,7 +217,7 @@ def profitability_calculate_only(queryset, costprice_flag='table', order_deliver
                         'comission': comission_fbs_express
                     }
                 }
-            elif product.platform.name == 'Яндекс Маркет':
+            elif product.platform.name == 'Yandex Market':
                 price = ProductForMarketplacePrice.objects.get(
                     product=product.product).yandex_price
                 comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
@@ -248,7 +248,6 @@ def profitability_calculate_only(queryset, costprice_flag='table', order_deliver
                         'comission': comission_fbs_express
                     }
                 }
-
             logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
             comission = comission_logistic_costs[order_delivery_type]['comission']
 
@@ -382,7 +381,7 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None, co
                         'comission': comission_fbs_express
                     }
                 }
-            elif product.platform.name == 'Яндекс Маркет':
+            elif product.platform.name == 'Yandex Market':
                 price = ProductForMarketplacePrice.objects.get(
                     product=product.product).yandex_price
                 comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
@@ -705,9 +704,6 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                     profitability = incoming_profitability
 
                     profit_obj = ProfitabilityMarketplaceProduct.objects.get(mp_product=product)
-                    
-                    print('logistic_cost', logistic_cost, order_delivery_type)
-                    print('comission', comission, order_delivery_type)
                     # Цена на основе обычной себестоимости
                     common_price = round(((common_product_cost_price + comission + logistic_cost
                                            ) / (1 - profitability/100 - overheads)), 2)
