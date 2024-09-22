@@ -359,15 +359,20 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
                 queryset, costprice_flag=costprice_flag, order_delivery_type=order_delivery_type)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_profitability])
-        page = self.paginate_queryset(queryset.order_by('id'))
+
+        # Получение параметра сортировки из запроса
+        ordering = request.query_params.get('ordering', None)
+        if ordering:
+            queryset = queryset.order_by(ordering)
+        else:
+            queryset = queryset.order_by('id')
+
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset.order_by('id'), many=True)
-
-        
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
