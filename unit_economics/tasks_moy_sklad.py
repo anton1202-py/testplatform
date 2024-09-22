@@ -61,13 +61,13 @@ def moy_sklad_add_data_to_db():
                     if price['priceType']['name'] == 'Цена РРЦ МС':
                         wb_price_after_discount = price['value']
                 # Добавление фотографии
-                # photo_link = picture_href_request(
-                #     token_ms, item['images']['meta']['href'])
+                photo_link = picture_href_request(
+                    token_ms, item['images']['meta']['href'])
                 image_filename = ''
                 image_content = ''
-                # if photo_link:
-                #     image_filename, image_content = get_picture_from_moy_sklad(
-                #         token_ms, photo_link)
+                if photo_link:
+                    image_filename, image_content = get_picture_from_moy_sklad(
+                        token_ms, photo_link)
 
                 # Извлечение себестоимости
                 if item['meta']['type'] == 'product':
