@@ -81,20 +81,20 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         total_processed = 0  # Счетчик обработанных записей
 
         # change_product_price(TOKEN_MY_SKLAD)
-        moy_sklad_add_data_to_db()
-        wb_products_data_to_db()
-        wb_logistic_add_to_db()
-        wb_comission_add_to_db()
-        ozon_products_data_to_db()
+        # moy_sklad_add_data_to_db()
+        # wb_products_data_to_db()
+        # wb_logistic_add_to_db()
+        # wb_comission_add_to_db()
+        # ozon_products_data_to_db()
         ozon_comission_logistic_add_data_to_db()
-        yandex_add_products_data_to_db()
-        yandex_comission_logistic_add_data_to_db()
-        moy_sklad_stock_data()
-        profitability_calculate(user_id=user.id)
-        print('moy_sklad_costprice_add_to_db ')
-        # moy_sklad_costprice_add_to_db()
-        print('Прошли moy_sklad_costprice_add_to_db ')
-        action_article_price_to_db()
+        # yandex_add_products_data_to_db()
+        # yandex_comission_logistic_add_data_to_db()
+        # moy_sklad_stock_data()
+        # profitability_calculate(user_id=user.id)
+        # print('moy_sklad_costprice_add_to_db ')
+        # # moy_sklad_costprice_add_to_db()
+        # print('Прошли moy_sklad_costprice_add_to_db ')
+        # action_article_price_to_db()
         # profitability_calculate(user.id, overheads=0.2, profitability_group=None, costprice_flag='table')
         # action_article_price_to_db()
         updated_products = ProductPrice.objects.all()
@@ -325,18 +325,19 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         action_id = request.query_params.get('action_id')
         costprice_flag = request.query_params.get('costprice_flag')
         price_toggle = request.query_params.get('price_toggle')
+        order_delivery_type = request.query_params.get('order_delivery_type')
 
         if profitability_group:
             # Срабатывает, когда нажимают на бар диаграммы, чтобы отфильтровать по нему товары
             result = profitability_calculate(
-                request.user.id, profitability_group=profitability_group, costprice_flag=costprice_flag)
+                request.user.id, profitability_group=profitability_group, costprice_flag=costprice_flag, order_delivery_type=order_delivery_type)
             queryset = queryset.filter(
                 id__in=[p.id for p in result['filtered_products']])
         
         if price_toggle:
             # Срабатывает, когда переключатель ЦЕНА в положении МОЙ СКЛАД
             result = profitability_calculate_only(
-                queryset, costprice_flag=costprice_flag)
+                queryset, costprice_flag=costprice_flag, order_delivery_type=order_delivery_type)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in result])
            
@@ -344,7 +345,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if calculate_product_price:
             # Срабатывает, когда переключатель ЦЕНА в положении ПО УРОВНЮ РЕНТАБЕЛЬНОСТИ
             updated_products = calculate_mp_price_with_incoming_profitability(
-                float(calculate_product_price), queryset, costprice_flag=costprice_flag)
+                float(calculate_product_price), queryset, costprice_flag=costprice_flag, order_delivery_type=order_delivery_type)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_products])
 
@@ -355,7 +356,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
                 product_in_action__action__id=action_id).distinct()
             # Пересчитывает рентабельность и прибыль на основании входящей цены. И сохраняет цену и рентабельность
             updated_profitability = calculate_mp_profitability_with_incoming_price(action_id,
-                queryset, costprice_flag=costprice_flag)
+                queryset, costprice_flag=costprice_flag, order_delivery_type=order_delivery_type)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_profitability])
         page = self.paginate_queryset(queryset.order_by('id'))

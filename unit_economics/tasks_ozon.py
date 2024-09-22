@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+import math
 
 from api_requests.ozon_requests import (ozon_actions_list,
                                         ozon_actions_product_price_info,
@@ -76,17 +77,33 @@ def ozon_comission_logistic_add_data_to_db():
                             oz_price / 100
                         add_marketplace_comission_to_db(product_obj, fbs_commission,
                                                         fbo_commission)
-
+                        width = product_obj.width
+                        height = product_obj.height
+                        lenght = product_obj.length
+                        volume_cost_fbo = 0
+                        volume_cost_fbs = 0
+                        volume = (width * height * lenght) / 1000
+                        if volume < 1:
+                            volume_cost_fbs = 76
+                            volume_cost_fbo = 63
+                        elif volume > 190:
+                            volume_cost_fbs = 2344
+                            volume_cost_fbo = 1953
+                        else:
+                            volume_cost_fbs = 76 + 12 * math.ceil(volume - 1)
+                            volume_cost_fbo = 63 + 10 * math.ceil(volume - 1)
                         cost_logistic_fbo = comissions_data['fbo_deliv_to_customer_amount'] + \
                             comissions_data['fbo_fulfillment_amount'] + \
-                            comissions_data['fbo_direct_flow_trans_max_amount']
+                            comissions_data['fbo_direct_flow_trans_max_amount'] + volume_cost_fbo
                         cost_logistic_fbs = comissions_data['fbs_deliv_to_customer_amount'] + \
                             comissions_data['fbs_direct_flow_trans_max_amount'] + \
-                            comissions_data['fbs_first_mile_max_amount']
-
+                            comissions_data['fbs_first_mile_max_amount'] + volume_cost_fbs
+                        if product_obj.id == 11433:
+                            print('cost_logistic_fbo', volume, volume_cost_fbs, volume_cost_fbo, cost_logistic_fbo)
+                            print('cost_logistic_fbs', cost_logistic_fbs)
                         add_marketplace_logistic_to_db(
                             product_obj, cost_logistic_fbo=cost_logistic_fbo, cost_logistic_fbs=cost_logistic_fbs)
-                        print(f'Сохранил комиссию для {product_obj}')
+                        # print(f'Сохранил комиссию для {product_obj}')
                 except MarketplaceProduct.DoesNotExist:
                     logger.info(
                         f'В модели MarketplaceProduct (ОЗОН) нет sku {data["product_id"]}')
