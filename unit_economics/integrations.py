@@ -339,7 +339,7 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None, co
                     filtered_products.append(product)
                 elif profitability_group == 'count_between_0_and_minus_10' and -10 < profitability <= 0:
                     filtered_products.append(product)
-                elif profitability_group == 'count_between_minus10_and_minus_20' and -20 < profitability <= -10:
+                elif profitability_group == 'count_between_minus_10_and_minus_20' and -20 < profitability <= -10:
                     filtered_products.append(product)
                 elif profitability_group == 'count_below_minus_20' and profitability <= -20:
                     filtered_products.append(product)
