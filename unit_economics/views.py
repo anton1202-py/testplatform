@@ -81,17 +81,17 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         total_processed = 0  # Счетчик обработанных записей
 
         # change_product_price(TOKEN_MY_SKLAD)
-        # moy_sklad_add_data_to_db()
-        # wb_products_data_to_db()
-        # wb_logistic_add_to_db()
-        # wb_comission_add_to_db()
-        # ozon_products_data_to_db()
-        # ozon_comission_logistic_add_data_to_db()
-        # yandex_add_products_data_to_db()
-        # yandex_comission_logistic_add_data_to_db()
-        # moy_sklad_stock_data()
-        # profitability_calculate(user_id=user.id)
-        # print('moy_sklad_costprice_add_to_db ')
+        moy_sklad_add_data_to_db()
+        wb_products_data_to_db()
+        wb_logistic_add_to_db()
+        wb_comission_add_to_db()
+        ozon_products_data_to_db()
+        ozon_comission_logistic_add_data_to_db()
+        yandex_add_products_data_to_db()
+        yandex_comission_logistic_add_data_to_db()
+        moy_sklad_stock_data()
+        profitability_calculate(user_id=user.id)
+        print('moy_sklad_costprice_add_to_db ')
         # moy_sklad_costprice_add_to_db()
         print('Прошли moy_sklad_costprice_add_to_db ')
         action_article_price_to_db()
@@ -315,7 +315,7 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             Prefetch('product_in_action',
                      queryset=MarketplaceProductInAction.objects.select_related('action'))
         )
-        return queryset
+        return queryset.order_by('id')
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -358,13 +358,13 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
                 queryset, costprice_flag=costprice_flag)
             queryset = MarketplaceProduct.objects.filter(
                 id__in=[p.id for p in updated_profitability])
-        page = self.paginate_queryset(queryset)
+        page = self.paginate_queryset(queryset.order_by('id'))
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(queryset.order_by('id'), many=True)
 
         
         return Response(serializer.data)

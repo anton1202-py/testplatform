@@ -481,19 +481,19 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                     profit_product_cost_price = 0
                 if not profitability:
                     profitability=0
-                if incoming_profitability * 100 > profitability:
+                if incoming_profitability > profitability:
                     profitability = incoming_profitability
 
                     profit_obj = ProfitabilityMarketplaceProduct.objects.get(mp_product=product)
                     
 
-                    # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
+                    # Цена на основе обычной себестоимости
                     common_price = round(((common_product_cost_price + comission + logistic_cost
-                                           ) / (1 - profitability - overheads)), 2)
+                                           ) / (1 - profitability/100 - overheads)), 2)
 
                     # Цена на основе себестоимости по оприходованию
                     enter_price = round(((profit_product_cost_price + comission + logistic_cost
-                                          ) / (1 - profitability - overheads)), 2)
+                                          ) / (1 - profitability/100 - overheads)), 2)
                     if costprice_flag == 'table':
                         common_profit = profitability * common_price
                     elif costprice_flag == 'enter':
