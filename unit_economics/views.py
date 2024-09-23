@@ -353,7 +353,8 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
         if action_id:
             # Срабатывает, когда переключатель нужно получить товары в АКЦИИ с номер action_id
             queryset = queryset.filter(
-                product_in_action__action__id=action_id).distinct()
+                product_in_action__action__id=action_id,
+                product_in_action__status=True).distinct()
             # Пересчитывает рентабельность и прибыль на основании входящей цены. И сохраняет цену и рентабельность
             updated_profitability = calculate_mp_profitability_with_incoming_price(action_id,
                 queryset, costprice_flag=costprice_flag, order_delivery_type=order_delivery_type)
@@ -643,7 +644,7 @@ class MarketplaceActionList(ListAPIView):
         platform_id = self.request.query_params.get('platform_id')
         # Фильтруем акции, которые ещё не закончились
         queryset = MarketplaceAction.objects.filter(
-            id__in=MarketplaceProductInAction.objects.values_list('action_id', flat=True).distinct(),
+            id__in=MarketplaceProductInAction.objects.filter(status=True).values_list('action_id', flat=True).distinct(),
             date_finish__gte=today)
         if user_id:
             queryset = queryset.filter(account__user_id=user_id)
