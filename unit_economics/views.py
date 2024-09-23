@@ -82,6 +82,7 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
 
         # change_product_price(TOKEN_MY_SKLAD)
         # moy_sklad_add_data_to_db()
+        print('moy_sklad_costprice_calculate_for_bundle')
         moy_sklad_costprice_calculate_for_bundle()
         # moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
