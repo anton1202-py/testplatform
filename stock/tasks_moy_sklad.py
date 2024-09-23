@@ -444,6 +444,7 @@ def moy_sklad_costprice_calculate_for_bundle():
         ids_code_bundle_list = {}
         for data in products_list:
             components = moy_sklad_bundle_components(token_ms, data.moy_sklad_product_number)
+            component_list = []
             data_costprice = 0
             for component in components:
                 product_link  =component['assortment']['meta']['href']
@@ -472,13 +473,13 @@ def moy_sklad_costprice_calculate_for_bundle():
                 
                 # print(component_code, component_costprice/100)
                 data_costprice += component_costprice/100 * component_amount
+
+            print(data, data_costprice)
         if ProductCostPrice.objects.filter(product=data).exists():
-            print('существует', data)
             cp_obj = ProductCostPrice.objects.get(product=data)
             cp_obj.cost_price = round(data_costprice, 2)
             cp_obj.save()
         else:
-            print('Сохранил заново', data)
             ProductCostPrice(product=data,
             cost_price=round(data_costprice, 2)
             ).save()
