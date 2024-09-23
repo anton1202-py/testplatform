@@ -472,13 +472,13 @@ def moy_sklad_costprice_calculate_for_bundle():
                 
                 # print(component_code, component_costprice/100)
                 data_costprice += component_costprice/100 * component_amount
-        if ProductCostPrice.objects.filter(product=data).exists():
-            print('существует', data)
-            cp_obj = ProductCostPrice.objects.get(product=data)
-            cp_obj.cost_price = round(data_costprice, 2)
-            cp_obj.save()
-        else:
-            print('Сохранил заново', data)
-            ProductCostPrice(product=data,
-            cost_price=round(data_costprice, 2)
-            ).save()
+            if ProductCostPrice.objects.filter(product=data).exists():
+                print('существует', data)
+                cp_obj = ProductCostPrice.objects.get(product=data)
+                cp_obj.cost_price = round(data_costprice, 2)
+                cp_obj.save()
+            else:
+                print('Сохранил заново', data)
+                ProductCostPrice(product=data,
+                cost_price=round(data_costprice, 2)
+                ).save()
