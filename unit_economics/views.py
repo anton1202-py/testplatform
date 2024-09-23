@@ -2,7 +2,7 @@ import logging
 
 import requests
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, Prefetch, Q, Case, When, Value, BooleanField
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -169,7 +169,7 @@ class TopSelectorsViewSet(GenericAPIView):
         brands_data = ProductPrice.objects.all().values(
             'brand').distinct().order_by('brand')
         goods_data = ProductPrice.objects.filter(
-            account__user__id=user_id).order_by('id')
+            account__user__id=user_id).order_by('name')
 
         top_selection_platform_id = self.request.query_params.get(
             'top_selection_platform_id')
@@ -355,6 +355,15 @@ class MarketplaceProductViewSet(viewsets.ReadOnlyModelViewSet):
             # Срабатывает, когда переключатель нужно получить товары в АКЦИИ с номер action_id
             queryset = queryset.filter(
                 product_in_action__action__id=action_id).distinct()
+            # Аннотируем каждый товар значением status из связанной модели MarketplaceProductInAction
+            queryset = queryset.annotate(
+                has_participation=Case(
+                    When(product_in_action__status=True, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField()
+                )
+            ).order_by('-has_participation')
+
             # Пересчитывает рентабельность и прибыль на основании входящей цены. И сохраняет цену и рентабельность
             updated_profitability = calculate_mp_profitability_with_incoming_price(action_id,
                 queryset, costprice_flag=costprice_flag, order_delivery_type=order_delivery_type)
