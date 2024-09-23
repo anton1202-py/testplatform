@@ -168,7 +168,7 @@ class TopSelectorsViewSet(GenericAPIView):
         brands_data = ProductPrice.objects.all().values(
             'brand').distinct().order_by('brand')
         goods_data = ProductPrice.objects.filter(
-            account__user__id=user_id).order_by('id')
+            account__user__id=user_id).order_by('name')
 
         top_selection_platform_id = self.request.query_params.get(
             'top_selection_platform_id')
