@@ -257,3 +257,55 @@ def get_picture_from_moy_sklad(token_moy_sklad, api_url):
         filename = f'{api_url.split("/")[-1]}.jpg'
         # Сохраняем изображение
         return filename, ContentFile(response.content)
+
+
+def moy_sklad_bundle_components(TOKEN_MY_SKLAD, bundle_id):
+    """
+    Достает список оприходований товаров
+
+    Входящие переменные:
+        TOKEN_MY_SKLAD - токен учетной записи
+        bundle_id - id комплекта для получения его компнентов
+    """
+    api_url = f"https://api.moysklad.ru/api/remap/1.2/entity/bundle/{bundle_id}/components"
+    headers = {
+        'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': 'application/json'
+    }
+    components_data_list = []
+    response = requests.get(api_url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        products = data.get('rows', [])
+        for product in products:
+            components_data_list.append(product)
+        return components_data_list
+    else:
+        message = f'Ошибка при вызове метода {api_url}: {response.status_code}. {response.text}'
+        print(message)
+
+
+def moy_sklad_product_info(TOKEN_MY_SKLAD, product_link):
+    """
+    Получение данных о товаре по его ссылке
+
+    Входящие переменные:
+        TOKEN_MY_SKLAD - токен учетной записи
+        product_link - ссылка на продукт
+    """
+    time.sleep(0.5)
+    api_url = f"{product_link}"
+    headers = {
+        'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': 'application/json'
+    }
+    
+    response = requests.get(api_url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        return data
+    else:
+        message = f'Ошибка при вызове метода {api_url}: {response.status_code}. {response.text}'
+        print(message)

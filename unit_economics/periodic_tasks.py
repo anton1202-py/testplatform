@@ -3,7 +3,7 @@ from core.models import Account
 from unit_economics.models import (MarketplaceAction, ProductCostPrice,
                                    ProductPrice)
 from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
-                                            moy_sklad_costprice_calculate)
+                                            moy_sklad_costprice_calculate, moy_sklad_costprice_calculate_for_bundle)
 from unit_economics.tasks_ozon import (ozon_action_article_price_to_db,
                                        ozon_action_data_to_db,
                                        ozon_comission_logistic_add_data_to_db,
@@ -73,10 +73,10 @@ def moy_sklad_costprice_add_to_db():
             values_for_update = {
                 "cost_price": cost_price
             }
-            print('Сохраняем с/с', product, cost_price)
             ProductCostPrice.objects.update_or_create(
                 defaults=values_for_update, **search_params
             )
+    moy_sklad_costprice_calculate_for_bundle()
 
 
 @app.task()

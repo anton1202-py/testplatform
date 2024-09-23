@@ -5,8 +5,8 @@ from django.db import transaction
 
 from api_requests.moy_sklad import (get_assortiment_info,
                                     get_picture_from_moy_sklad, get_stock_info,
-                                    moy_sklad_assortment, moy_sklad_enter,
-                                    moy_sklad_positions_enter,
+                                    moy_sklad_assortment, moy_sklad_bundle_components, moy_sklad_enter,
+                                    moy_sklad_positions_enter, moy_sklad_product_info,
                                     picture_href_request)
 from core.enums import MarketplaceChoices
 from core.models import Account, Platform
@@ -51,6 +51,7 @@ def moy_sklad_add_data_to_db():
                 # Добавляем продукты и информацию о них в список
                 attributes_list = item['attributes']
                 brand = ''
+                code = item.get('code', '')
                 for attribute in attributes_list:
                     if attribute['name'] == 'Бренд':
                         brand = attribute['value']
@@ -129,6 +130,7 @@ def moy_sklad_add_data_to_db():
                         account=account,
                         moy_sklad_product_number=item.get('id', '')).update(
                         name=item.get('name', ''),
+                        code=code,
                         barcode=[list(barcode.values())[0]
                                  for barcode in item.get('barcodes', [])],
                         cost_price=common_cost_price,
@@ -139,6 +141,7 @@ def moy_sklad_add_data_to_db():
                     ProductPrice(
                         account=account,
                         moy_sklad_product_number=item.get('id', ''),
+                        code=code,
                         name=item.get('name', ''),
                         brand=brand,
                         vendor=item.get('article', ''),
@@ -254,8 +257,7 @@ def moy_sklad_enters_calculate():
         for enter in enters_list:
             enter_id = enter['id']
             x -= 1
-            print(x)
-            print(f'У поставки {enter_id} записей {len(PostingGoods.objects.filter(enter_number=enter_id))}')
+           
             if PostingGoods.objects.filter(enter_number=enter_id).exists():
                 print('Должен пропустить')
                 continue
@@ -423,3 +425,57 @@ def moy_sklad_costprice_calculate():
                 code_list.append(inner_dict)
         account_cost_price_data[account] = code_list
     return account_cost_price_data
+
+def moy_sklad_costprice_calculate_for_bundle():
+    """
+    Считает себестоимость товаров методом оприходования для комплектов
+    """
+    accounts_ms = Account.objects.filter(
+        platform=Platform.objects.get(
+            platform_type=MarketplaceChoices.MOY_SKLAD)
+    )
+    stock_data = moy_sklad_stock_data()
+    for account in accounts_ms:
+        token_ms = account.authorization_fields['token']
+        
+
+        products_list = ProductPrice.objects.filter(product_type='bundle')
+        stock_account = stock_data[account]
+        ids_code_bundle_list = {}
+        for data in products_list:
+            components = moy_sklad_bundle_components(token_ms, data.moy_sklad_product_number)
+            component_list = []
+            data_costprice = 0
+            for component in components:
+                product_link  =component['assortment']['meta']['href']
+                component_data = moy_sklad_product_info(token_ms, product_link)
+                component_moy_sklad_product_number = component_data['id']
+                component_code = component_data['code']
+                component_amount = component['quantity']
+                component_costprice = 0
+                component_enter_data = PostingGoods.objects.filter(product__moy_sklad_product_number=component_moy_sklad_product_number).order_by('-receipt_date')
+                # print('component_code', component_code)
+                # print('component_enter_data', component_enter_data)
+                for index, component_enter in enumerate(component_enter_data):    
+                    if component_code in stock_account:
+                        code_stock = stock_account[component_code]
+                        common_amount = 0
+
+                        # for component_enter in component_enter_data:
+                        common_amount += component_enter.amount
+                        if common_amount > code_stock:
+                            component_costprice = component_enter.price + component_enter.costs/component_enter.amount
+                        elif common_amount < code_stock and index == len(component_enter_data) - 1:
+                            component_costprice = component_enter.price + component_enter.costs/component_enter.amount
+                        
+                    else:
+                        component_costprice = component_enter.price + component_enter.costs/component_enter.amount
+                
+                # print(component_code, component_costprice/100)
+                data_costprice += component_costprice/100 * component_amount
+
+            print(data, data_costprice)
+            
+        cp_obj = ProductCostPrice.objects.get(product=data)
+        cp_obj.cost_price = round(data_costprice, 2)
+        cp_obj.save()

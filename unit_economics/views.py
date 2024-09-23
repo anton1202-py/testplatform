@@ -40,7 +40,7 @@ from unit_economics.serializers import (
     MarketplaceProductSerializer, PlatformSerializer, ProductNameSerializer,
     ProductPriceSelectSerializer, ProductPriceSerializer,
     ProfitabilityMarketplaceProductSerializer)
-from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db,
+from unit_economics.tasks_moy_sklad import (moy_sklad_add_data_to_db, moy_sklad_costprice_calculate_for_bundle,
                                             moy_sklad_stock_data)
 from unit_economics.tasks_ozon import (ozon_comission_logistic_add_data_to_db,
                                        ozon_products_data_to_db)
@@ -81,12 +81,13 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         total_processed = 0  # Счетчик обработанных записей
 
         # change_product_price(TOKEN_MY_SKLAD)
+        moy_sklad_costprice_calculate_for_bundle()
         # moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
         # ozon_products_data_to_db()
-        ozon_comission_logistic_add_data_to_db()
+        # ozon_comission_logistic_add_data_to_db()
         # yandex_add_products_data_to_db()
         # yandex_comission_logistic_add_data_to_db()
         # moy_sklad_stock_data()
