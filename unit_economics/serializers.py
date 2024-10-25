@@ -8,7 +8,7 @@ from unit_economics.models import (MarketplaceAction, MarketplaceCommission,
                                    MarketplaceProductInAction,
                                    MarketplaceProductPriceWithProfitability,
                                    ProductPrice,
-                                   ProfitabilityMarketplaceProduct)
+                                   ProfitabilityMarketplaceProduct, StoreOverhead)
 
 
 class PlatformSerializer(serializers.ModelSerializer):
@@ -69,16 +69,7 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
     usual_price = serializers.FloatField(
         source='mp_product_profit_price.usual_price', read_only=True)
     actions = serializers.SerializerMethodField()
-    # print('cost_price', cost_price)
-    # print('posting_costprice', posting_costprice)
-    # print('rrc', rrc)
-    # print('price', price)
-    # print('logistic_cost', logistic_cost)
-    # print('profit_price', profit_price)
-    # print('profit_price', usual_price)
-    # print('profitability', profitability)
-    # print('profit', profit)
-    # print('profitability', profitability)
+    
     class Meta:
         model = MarketplaceProduct
         fields = [
@@ -127,11 +118,6 @@ class MarketplaceProductSerializer(serializers.ModelSerializer):
             return {}
         except MarketplaceProduct.marketproduct_logistic.RelatedObjectDoesNotExist:
             return {}
-
-    # def get_posting_costprice(self, obj):
-    #     if obj.product.costprice_product.cost_price:
-    #         return obj.product.costprice_product.cost_price
-    #     return None
 
     def get_image(self, obj):
         if obj.product.image:
@@ -212,3 +198,16 @@ class MarketplaceProductPriceWithProfitabilitySerializer(serializers.ModelSerial
     class Meta:
         model = MarketplaceProductPriceWithProfitability
         fields = ['id', 'brand', 'profit_price', 'usual_price']
+
+
+class StoreOverheadSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = StoreOverhead
+        fields = ['id', 'account', 'name', 'overhead']
+
+
+class StoreOverheadListSerializer(serializers.Serializer):
+    store_overheads = StoreOverheadSerializer(many=True)
+    total_overhead = serializers.FloatField()
+

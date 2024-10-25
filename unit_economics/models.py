@@ -149,6 +149,7 @@ class MarketplaceProduct(models.Model):
                                  on_delete=models.CASCADE, verbose_name='Категория товара', null=True, blank=True)
     change_price_flag = models.BooleanField(
         verbose_name='Показатель изменения цены', default=False)
+    is_active = models.BooleanField(default=True, verbose_name='Активный товар')
 
     class Meta:
         verbose_name = "Продукт на Маркетплейсе"
@@ -252,3 +253,12 @@ class MarketplaceProductInAction(models.Model):
     class Meta:
         verbose_name = "Товары в акции"
         verbose_name_plural = "Товары в акции"
+
+
+class StoreOverhead(models.Model):
+    """Накладные расходы для магазина"""
+    account = models.ForeignKey(Account, related_name='account_store', on_delete=models.CASCADE,
+                                verbose_name='Магазин на маркетплейсе', null=True, blank=True)
+    name = models.CharField(max_length=100, verbose_name='Название расходов')
+    overhead = models.FloatField(verbose_name='Значение накладных расходов', null=True, blank=True)
+

@@ -1,13 +1,13 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from unit_economics.views import (  # ProductsByCategoryAPIView)
+from unit_economics.views import (
     AccountViewSet, BrandViewSet, CalculateMarketplacePriceView,
     MarketplaceActionListView, MarketplaceProductPriceWithProfitabilityViewSet,
     MarketplaceProductViewSet, PlatformViewSet, ProductMoySkladViewSet,
     ProductNameViewSet, ProductPriceMSViewSet, ProfitabilityAPIView,
     TopSelectorsViewSet, UpdatePriceView, UserIdView, CalculateMPPriceView, MarketplaceActionList,
-    UpdateMarketplaceProductFlag)
+    UpdateMarketplaceProductFlag, StoreOverheadViewSet)
 
 router = DefaultRouter()
 router.register(r'product-create-db-my-sklad',
@@ -21,6 +21,8 @@ router.register(r'brands', BrandViewSet, basename='brand')
 router.register(r'product-names', ProductNameViewSet, basename='product-name')
 router.register(r'profitability-fifo', MarketplaceProductPriceWithProfitabilityViewSet,
                 basename='profitability-and-fifo')
+router.register(r'accounts/(?P<account_id>\d+)/store-overheads', StoreOverheadViewSet, basename='store-overhead')
+
 
 urlpatterns = [
     path('', include(router.urls)),

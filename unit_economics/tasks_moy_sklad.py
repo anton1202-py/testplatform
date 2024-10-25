@@ -1,4 +1,5 @@
 import logging
+import time
 
 import requests
 from django.db import transaction
@@ -46,121 +47,138 @@ def moy_sklad_add_data_to_db():
         token_ms = account.authorization_fields['token']
         products_data_list = moy_sklad_assortment(token_ms)
         product_data = []
+        x = len(products_data_list)
+        print(x)
         if products_data_list:
             for item in products_data_list:
                 # Добавляем продукты и информацию о них в список
                 attributes_list = item['attributes']
                 brand = ''
                 code = item.get('code', '')
-                for attribute in attributes_list:
-                    if attribute['name'] == 'Бренд':
-                        brand = attribute['value']
-                # Извлечение цен
-                sale_prices_list = item.get('salePrices', [])
-                wb_price_after_discount = ''
-                for price in sale_prices_list:
-                    if price['priceType']['name'] == 'Цена РРЦ МС':
-                        wb_price_after_discount = price['value']
-                # Добавление фотографии
-                # photo_link = picture_href_request(
-                #     token_ms, item['images']['meta']['href'])
-                image_filename = ''
-                image_content = ''
-                # if photo_link:
-                #     image_filename, image_content = get_picture_from_moy_sklad(
-                #         token_ms, photo_link)
+                try:
+                    for attribute in attributes_list:
+                        if attribute['name'] == 'Бренд':
+                            brand = attribute['value']
+                    # Извлечение цен
+                    sale_prices_list = item.get('salePrices', [])
+                    wb_price_after_discount = ''
+                    for price in sale_prices_list:
+                        if price['priceType']['name'] == 'Цена РРЦ МС':
+                            wb_price_after_discount = price['value']
+                    # Добавление фотографии
+                    photo_link = picture_href_request(
+                        token_ms, item['images']['meta']['href'])
+                    image_filename = ''
+                    image_content = ''
+                    if photo_link:
+                        image_filename, image_content = get_picture_from_moy_sklad(
+                            token_ms, photo_link)
 
-                # Извлечение себестоимости
-                if item['meta']['type'] == 'product':
-                    cost_price = item.get('buyPrice', {}).get(
-                        'value', 0)  # Используем 0 как дефолтное значение
+                    # Извлечение себестоимости
+                    if item['meta']['type'] == 'product':
+                        cost_price = item.get('buyPrice', {}).get(
+                            'value', 0)  # Используем 0 как дефолтное значение
 
-                elif item['meta']['type'] == 'bundle':
-                    components_url = item['components']['meta']['href']
-                    headers = {
-                        'Authorization': f'Bearer {token_ms}',
-                        'Accept-Encoding': 'gzip',
-                        'Content-Type': 'application/json'
-                    }
+                    elif item['meta']['type'] == 'bundle':
+                        components_url = item['components']['meta']['href']
+                        headers = {
+                            'Authorization': f'Bearer {token_ms}',
+                            'Accept-Encoding': 'gzip',
+                            'Content-Type': 'application/json'
+                        }
+                        try:
+                            response = requests.get(
+                                components_url, headers=headers, timeout=200)
+                        except:
+                            time.sleep(10)
+                            response = requests.get(
+                                components_url, headers=headers, timeout=500)
 
-                    response = requests.get(
-                        components_url, headers=headers, timeout=10)
+                        if response.status_code == 200:
+                            components_data = response.json()
+                            total_cost_price = 0
+                            list_url_products = []
+                            for component in components_data.get('rows', []):
+                                product_url = component['assortment']['meta']['href']
+                                quantity = component.get('quantity')
+                                list_url_products.append((product_url, quantity))
 
-                    if response.status_code == 200:
-                        components_data = response.json()
-                        total_cost_price = 0
-                        list_url_products = []
-                        for component in components_data.get('rows', []):
-                            product_url = component['assortment']['meta']['href']
-                            quantity = component.get('quantity')
-                            list_url_products.append((product_url, quantity))
+                            for product_url, quantity in list_url_products:
+                                time.sleep(1)
+                                try:
+                                    response_url = requests.get(
+                                    product_url, headers=headers, timeout=200)
+                                except:
+                                    time.sleep(10)
+                                    response_url = requests.get(
+                                        product_url, headers=headers, timeout=500)
+                                if response_url.status_code == 200:
+                                    cost_price_data = response_url.json()
+                                    total_cost_price += cost_price_data.get(
+                                        'buyPrice', {}).get('value', 0) * quantity
+                                else:
+                                    message = f'Ошибка при вызове метода (продукт): {response_url.status_code}. {response_url.text}'
+                                    print(message)
+                                    total_cost_price = None
+                                    break  # Прекращаем суммирование, если есть ошибка
 
-                        for product_url, quantity in list_url_products:
-                            response_url = requests.get(
-                                product_url, headers=headers, timeout=60)
+                            cost_price = total_cost_price
 
-                            if response_url.status_code == 200:
-                                cost_price_data = response_url.json()
-                                total_cost_price += cost_price_data.get(
-                                    'buyPrice', {}).get('value', 0) * quantity
-                            else:
-                                message = f'Ошибка при вызове метода (продукт): {response_url.status_code}. {response_url.text}'
-                                print(message)
-                                total_cost_price = None
-                                break  # Прекращаем суммирование, если есть ошибка
-
-                        cost_price = total_cost_price
-
+                        else:
+                            message = f'Ошибка при вызове метода (компоненты): {response.status_code}. {response.text}'
+                            print(message)
+                            cost_price = None
                     else:
-                        message = f'Ошибка при вызове метода (компоненты): {response.status_code}. {response.text}'
-                        print(message)
                         cost_price = None
-                else:
-                    cost_price = None
-                common_cost_price = cost_price/100
-                if cost_price:
                     common_cost_price = cost_price/100
-                else:
-                    common_cost_price = 0
+                    if cost_price:
+                        common_cost_price = cost_price/100
+                    else:
+                        common_cost_price = 0
 
-                if ProductPrice.objects.filter(
+                    if ProductPrice.objects.filter(
+                            account=account,
+                            moy_sklad_product_number=item.get('id', '')).exists():
+                        ProductPrice.objects.filter(
+                            account=account,
+                            moy_sklad_product_number=item.get('id', '')).update(
+                            name=item.get('name', ''),
+                            code=code,
+                            barcode=[list(barcode.values())[0]
+                                     for barcode in item.get('barcodes', [])],
+
+                            cost_price=common_cost_price,
+                            brand=brand,
+                            vendor=item.get('article', '')
+                        )
+                    else:
+                        ProductPrice(
+                            account=account,
+                            moy_sklad_product_number=item.get('id', ''),
+                            code=code,
+                            name=item.get('name', ''),
+                            brand=brand,
+                            vendor=item.get('article', ''),
+                            barcode=[list(barcode.values())[0]
+                                     for barcode in item.get('barcodes', [])],
+                            product_type=item['meta'].get('type'),
+                            cost_price=common_cost_price
+                        ).save()
+
+                    product_obj = ProductPrice.objects.get(
                         account=account,
-                        moy_sklad_product_number=item.get('id', '')).exists():
-                    ProductPrice.objects.filter(
-                        account=account,
-                        moy_sklad_product_number=item.get('id', '')).update(
-                        name=item.get('name', ''),
-                        code=code,
                         barcode=[list(barcode.values())[0]
                                  for barcode in item.get('barcodes', [])],
-                        cost_price=common_cost_price,
-                        brand=brand,
-                        vendor=item.get('article', '')
-                    )
-                else:
-                    ProductPrice(
-                        account=account,
-                        moy_sklad_product_number=item.get('id', ''),
-                        code=code,
-                        name=item.get('name', ''),
-                        brand=brand,
-                        vendor=item.get('article', ''),
-                        barcode=[list(barcode.values())[0]
-                                 for barcode in item.get('barcodes', [])],
-                        product_type=item['meta'].get('type'),
-                        cost_price=common_cost_price
-                    ).save()
-
-                product_obj = ProductPrice.objects.get(
-                    account=account,
-                    barcode=[list(barcode.values())[0]
-                             for barcode in item.get('barcodes', [])],
-                    moy_sklad_product_number=item.get('id', ''))
-                price_for_marketplace_from_moysklad(
-                    product_obj, item['salePrices'], account_names)
-                if image_filename:
-                    product_obj.image.save(
-                        image_filename, image_content)
+                        moy_sklad_product_number=item.get('id', ''))
+                    price_for_marketplace_from_moysklad(
+                        product_obj, item['salePrices'], account_names)
+                    if image_filename:
+                        product_obj.image.save(
+                            image_filename, image_content)
+                    x -= 1
+                    print(x)
+                except Exception as e:
+                    print(f'Ошибка на артикуле {code}: {e}')
 
 
 # @sender_error_to_tg
@@ -257,7 +275,7 @@ def moy_sklad_enters_calculate():
         for enter in enters_list:
             enter_id = enter['id']
             x -= 1
-           
+            print(x)
             if PostingGoods.objects.filter(enter_number=enter_id).exists():
                 print('Должен пропустить')
                 continue
@@ -297,26 +315,26 @@ def moy_sklad_enters_calculate():
                                                 price=price,
                                                 costs=overhead
                                             ).save()
-                                            # if article not in enter_main_data:
-                                            #     enter_main_data[article] = {
-                                            #         'article_data':
-                                            #             {
-                                            #                 'moy_sklad_id': moy_sklad_id
-                                            #             },
-                                            #         'enter_data': [
-                                            #             {
-                                            #                 'date': enter_date,
-                                            #                 'price': price,
-                                            #                 'quantity': quantity,
-                                            #                 'overhead': overhead
-                                            #             }]}
-                                            # else:
-                                            #     enter_main_data[article]['enter_data'].append({
-                                            #         'date': enter_date,
-                                            #         'price': price,
-                                            #         'quantity': quantity,
-                                            #         'overhead': overhead
-                                            #     })
+                                            if article not in enter_main_data:
+                                                enter_main_data[article] = {
+                                                    'article_data':
+                                                        {
+                                                            'moy_sklad_id': moy_sklad_id
+                                                        },
+                                                    'enter_data': [
+                                                        {
+                                                            'date': enter_date,
+                                                            'price': price,
+                                                            'quantity': quantity,
+                                                            'overhead': overhead
+                                                        }]}
+                                            else:
+                                                enter_main_data[article]['enter_data'].append({
+                                                    'date': enter_date,
+                                                    'price': price,
+                                                    'quantity': quantity,
+                                                    'overhead': overhead
+                                                })
         main_retuned_dict[account] = enter_main_data
     return main_retuned_dict
 
@@ -360,12 +378,15 @@ def moy_sklad_costprice_calculate():
     """
     Считает себестоимость товаров методом оприходования
     """
-    enters_data = moy_sklad_enters_calculate()
+    # enters_data = moy_sklad_enters_calculate()
     stock_data = moy_sklad_stock_data()
     enters_data = {}
     account_cost_price_data = {}
+    # Достает все записи из таблицы оприходования
     main_data = PostingGoods.objects.all()
     for data in main_data:
+        # Создаем внутренний словарь вида {'date': дата_поставки, 'price': Цена_при_поставке,
+        # 'quantity': количество_при_поставке, 'overhead': накладные_расходы}
         inner_dict = {
             'date': data.receipt_date,
             'price': data.price,
@@ -373,6 +394,9 @@ def moy_sklad_costprice_calculate():
             'overhead': data.costs
         }
         if data.account not in enters_data:
+            # Для каждого артикула (code) создаем словарь вида:
+            # {'article_data': {'product': product_obj (таблицы ProductPrice)},
+            #  'enter_data': [список из данных о каждой поставке артикула из inner_dict]}
             enters_data[data.account] = {
                 data.code: {
                     'article_data': {
@@ -394,7 +418,7 @@ def moy_sklad_costprice_calculate():
                 if inner_dict not in enters_data[data.account][data.code]['enter_data']:
                     enters_data[data.account][data.code]['enter_data'].append(
                         inner_dict)
-
+   
     for account, code_data in enters_data.items():
         code_list = []
         for code, article_info in code_data.items():
@@ -405,9 +429,11 @@ def moy_sklad_costprice_calculate():
             amount = 0
             overhead = 0
             price = 0
-            for index, enter_data in enumerate(sorted_enters_data_list):
-                summ += enter_data['quantity']
-                if code in stock_data[account]:
+            if code in stock_data[account]:
+                
+                # Считаем данные по мотоду оприходования
+                for index, enter_data in enumerate(sorted_enters_data_list):
+                    summ += enter_data['quantity']
                     if summ >= stock_data[account][code]:
                         overhead = enter_data['overhead']
                         amount = enter_data['quantity']
@@ -417,6 +443,11 @@ def moy_sklad_costprice_calculate():
                         overhead = enter_data['overhead']
                         amount = enter_data['quantity']
                         price = enter_data['price']
+            else:
+                if len(sorted_enters_data_list) > 0:
+                    overhead = sorted_enters_data_list[0]['overhead']
+                    amount = sorted_enters_data_list[0]['quantity']
+                    price = sorted_enters_data_list[0]['price']
 
             if amount > 0:
                 cost_price = (price + overhead/amount) / 100

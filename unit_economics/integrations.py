@@ -4,9 +4,9 @@ import traceback
 from functools import wraps
 
 import requests
-# import telegram
 from asgiref.sync import sync_to_async
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q, Case, When, Value, BooleanField, Sum, F
+import telegram
 
 from analyticalplatform.settings import ADMINS_CHATID_LIST, TELEGRAM_TOKEN
 from api_requests.moy_sklad import change_product_price
@@ -19,38 +19,31 @@ from unit_economics.models import (MarketplaceAction, MarketplaceCategory,
                                    ProductCostPrice,
                                    ProductForMarketplacePrice,
                                    ProductOzonPrice, ProductPrice,
-                                   ProfitabilityMarketplaceProduct)
+                                   ProfitabilityMarketplaceProduct, StoreOverhead)
 from unit_economics.serializers import MarketplaceProductSerializer
 
 logger = logging.getLogger(__name__)
-# bot = telegram.Bot(token=TELEGRAM_TOKEN)
+
+async def send_message_async(chat_id, message):
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    await bot.send_message(chat_id=chat_id, text=message[:4000])
+
+def sender_error_to_tg(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            tb_str = traceback.format_exc()
+            message_error = (f'Ошибка в функции: {func.__name__}\n'
+                             f'Функция выполняет: {func.__doc__}\n'
+                             f'Ошибка\n: {e}\n\n'
+                             f'Техническая информация:\n {tb_str}')
+            for chat_id in ADMINS_CHATID_LIST:
+                asyncio.run(send_message_async(chat_id, message_error))
+    return wrapper
 
 
-# def sender_error_to_tg(func):
-#     async def async_wrapper(*args, **kwargs):
-#         try:
-#             return await func(*args, **kwargs)
-#         except Exception as e:
-#             tb_str = traceback.format_exc()
-#             message_error = (f'Ошибка в функции: {func.__name__}\n'
-#                              f'Функция выполняет: {func.__doc__}\n'
-#                              f'Ошибка\n: {e}\n\n'
-#                              f'Техническая информация:\n {tb_str}')
-#             for chat_id in ADMINS_CHATID_LIST:
-#                 await bot.send_message(chat_id=chat_id, text=message_error[:4000])
-
-#     def sync_wrapper(*args, **kwargs):
-#         # Запускаем асинхронную функцию через asyncio.run
-#         return asyncio.run(async_wrapper(*args, **kwargs))
-
-#     # Проверяем, является ли функция асинхронной
-#     if asyncio.iscoroutinefunction(func):
-#         return async_wrapper
-#     else:
-#         return sync_wrapper
-
-
-# @sender_error_to_tg
+@sender_error_to_tg
 def add_marketplace_product_to_db(
         account_sklad, barcode,
         account, platform, name,
@@ -60,6 +53,7 @@ def add_marketplace_product_to_db(
     """
     Записывает данные о продуктах маркетплейсов после сопоставления с основными продуктами в базу данных
     """
+    
     category_obj, created = MarketplaceCategory.objects.get_or_create(
         platform=platform,
         category_number=category_number,
@@ -71,7 +65,7 @@ def add_marketplace_product_to_db(
         bc_list = product.barcode
         if str(barcode) in bc_list:
             if not MarketplaceProduct.objects.filter(account=account, platform=platform, product=product, sku=sku, barcode=barcode):
-                product_obj = MarketplaceProduct(
+                MarketplaceProduct(
                     account=account,
                     platform=platform,
                     product=product,
@@ -85,8 +79,7 @@ def add_marketplace_product_to_db(
                     length=length,
                     weight=weight,
                     ozonsku=ozon_sku
-                )
-                objects_for_create.append(product_obj)
+                ).save()
             else:
                 MarketplaceProduct.objects.filter(account=account, platform=platform, product=product, sku=sku, barcode=barcode).update(
                     name=name,
@@ -98,16 +91,20 @@ def add_marketplace_product_to_db(
                     weight=weight,
                     ozonsku=ozon_sku
                 )
-        continue
-    MarketplaceProduct.objects.bulk_create(objects_for_create)
 
-
-# @sender_error_to_tg
+@sender_error_to_tg
 def add_marketplace_comission_to_db(
         product_obj, fbs_commission=None, fbo_commission=None, dbs_commission=None, fbs_express_commission=None):
     """
     Записывает комиссии маркетплейсов в базу данных
     """
+    if product_obj.id == 14410:
+        print('good_data.category.category_number', product_obj.category.category_number)
+        print('fbs_commission', fbs_commission)
+        print('fbo_commission', fbo_commission)
+        print('dbs_commission', dbs_commission)
+        x = MarketplaceCommission.objects.filter(marketplace_product=product_obj)
+        print(x)
     search_params = {'marketplace_product': product_obj}
     values_for_update = {
         "fbs_commission": fbs_commission,
@@ -115,11 +112,12 @@ def add_marketplace_comission_to_db(
         "dbs_commission": dbs_commission,
         "fbs_express_commission": fbs_express_commission
     }
+    
     MarketplaceCommission.objects.update_or_create(
         defaults=values_for_update, **search_params)
 
 
-# @sender_error_to_tg
+@sender_error_to_tg
 def add_marketplace_logistic_to_db(
         product_obj, cost_logistic=None, cost_logistic_fbo=None, cost_logistic_fbs=None):
     """
@@ -135,14 +133,124 @@ def add_marketplace_logistic_to_db(
         defaults=values_for_update, **search_params)
 
 
-def profitability_calculate_only(queryset, costprice_flag='table', order_delivery_type='fbs'):
+def profitability_part_template(product):
+    """
+    Шаблон для расчета рентабельности
+    """
+    comission_logistic_costs = {}
+    account_obj = product.account
+    overheads = 0.2
+    overhead_data = StoreOverhead.objects.filter(account=account_obj).aggregate(
+        overhead_sum=Sum('overhead'))
+    if overhead_data['overhead_sum']:
+        overheads = overhead_data['overhead_sum'] / 100
+    
+    if product.platform.name == 'OZON':
+        account = product.account
+        price = ProductOzonPrice.objects.get(
+            account=account, product=product.product).ozon_price
+        comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        logistic_cost_fbs = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
+            product, 'marketproduct_logistic') else 0
+        logistic_cost_fbo = product.marketproduct_logistic.cost_logistic_fbo if hasattr(
+            product, 'marketproduct_logistic') else 0
+        comission_logistic_costs = {
+            'fbo': {
+                'logistic_cost': logistic_cost_fbo,
+                'comission': comission_fbo
+            },
+            'fbs': {
+                'logistic_cost': logistic_cost_fbs,
+                'comission': comission_fbs
+            },
+            'dbs': {
+                'logistic_cost': 0,
+                'comission': comission_dbs
+            },
+            'fbs_express': {
+                'logistic_cost': 0,
+                'comission': comission_fbs_express
+            }
+        }
+    elif product.platform.name == 'Wildberries':
+        price = ProductForMarketplacePrice.objects.get(
+            product=product.product).wb_price
+        comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
+            product, 'marketproduct_logistic') else 0
+        comission_logistic_costs = {
+            'fbo': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_fbo
+            },
+            'fbs': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_fbs
+            },
+            'dbs': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_dbs
+            },
+            'fbs_express': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_fbs_express
+            }
+        }
+    elif product.platform.name == 'Yandex Market':
+        price = ProductForMarketplacePrice.objects.get(
+            product=product.product).yandex_price
+        comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
+            product, 'marketproduct_comission') else 0
+        logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
+            product, 'marketproduct_logistic') else 0
+        comission_logistic_costs = {
+            'fbo': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_fbo
+            },
+            'fbs': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_fbs
+            },
+            'dbs': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_dbs
+            },
+            'fbs_express': {
+                'logistic_cost': logistic_cost,
+                'comission': comission_fbs_express
+            }
+        }
+    return price, overheads, comission_logistic_costs
+
+def profitability_calculate_only(queryset, costprice_flag='table', order_delivery_type='fbo'):
     """
     Пересчет рентабельности для всех входящих товаров.
     Происходит, когда переключатель Цена находится на Мой Склад
     Срабатывает от ключа в фильтрах: price_toggle
     """
     if order_delivery_type == None:
-        order_delivery_type = 'fbs'
+        order_delivery_type = 'fbo'
     mp_products_list = queryset.select_related(
         'marketproduct_logistic', 'marketproduct_comission', 'product', 'platform', 'account')
     products_to_update = []
@@ -150,108 +258,11 @@ def profitability_calculate_only(queryset, costprice_flag='table', order_deliver
     comission_logistic_costs = {}
     for product in mp_products_list:
         try:
-            price = 0
-            
-            if product.platform.name == 'OZON':
-                account = product.account
-                price = ProductOzonPrice.objects.get(
-                    account=account, product=product.product).ozon_price
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost_fbs = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                logistic_cost_fbo = product.marketproduct_logistic.cost_logistic_fbo if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost_fbo,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost_fbs,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': 0,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': 0,
-                        'comission': comission_fbs_express
-                    }
-                }
-            elif product.platform.name == 'Wildberries':
-                price = ProductForMarketplacePrice.objects.get(
-                    product=product.product).wb_price
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs_express
-                    }
-                }
-            elif product.platform.name == 'Yandex Market':
-                price = ProductForMarketplacePrice.objects.get(
-                    product=product.product).yandex_price
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs_express
-                    }
-                }
+            price, overheads, comission_logistic_costs = profitability_part_template(product)
             logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
             comission = comission_logistic_costs[order_delivery_type]['comission']
-
             cost_price = 0
+
             if costprice_flag == 'table':
                 cost_price = product.product.cost_price
             elif costprice_flag == 'enter':
@@ -262,34 +273,23 @@ def profitability_calculate_only(queryset, costprice_flag='table', order_deliver
                 else:
                     cost_price = 0
 
-            if price > 0:
-                search_params = {'mp_product': product}
-                try:
-                    profitability_product = ProfitabilityMarketplaceProduct.objects.get(
-                        **search_params)
-                    overheads = profitability_product.overheads
-                except ProfitabilityMarketplaceProduct.DoesNotExist:
-                    overheads = overheads
+            if price > 0:               
+                profitability_product = ProfitabilityMarketplaceProduct.objects.filter(
+                    mp_product=product)
                 profit = round((price - float(cost_price) -
-                                logistic_cost - comission - (overheads * price)), 2)
-                
+                                logistic_cost - (comission* price/100) - (overheads * price)), 2)
                 profitability = round(((profit / price) * 100), 2)                
-
-                # Добавляем фильтрацию по группе рентабельности
-
-                values_for_update = {
-                    "profit": profit,
-                    "profitability": profitability
-                }
-                if 'profitability_product' in locals():
+                if profitability_product:
                     # Обновляем существующий объект
+                    profitability_product = profitability_product.first()
                     profitability_product.profit = profit
                     profitability_product.profitability = profitability
-                    products_to_update.append(profitability_product)
+                    profitability_product.save()
                 else:
                     # Создаем новый объект
                     products_to_create.append(ProfitabilityMarketplaceProduct(
-                        mp_product=product, **values_for_update))
+                        mp_product=product, profit=profit,
+                    profitability=profitability))
         except (ProductOzonPrice.DoesNotExist, ProductForMarketplacePrice.DoesNotExist):
             # Пропускаем продукты, для которых нет цены
             continue
@@ -303,10 +303,10 @@ def profitability_calculate_only(queryset, costprice_flag='table', order_deliver
 
 
 
-def profitability_calculate(user_id, overheads=0.2, profitability_group=None, costprice_flag='table', order_delivery_type='fbs'):
+def profitability_calculate(user_id, profitability_group=None, costprice_flag='table', order_delivery_type='fbo'):
     """Расчет рентабельности по изменению для всей таблицы"""
     if order_delivery_type == None:
-        order_delivery_type = 'fbs'
+        order_delivery_type = 'fbo'
     user = User.objects.get(id=user_id)
     mp_products_list = MarketplaceProduct.objects.filter(account__user=user).select_related(
         'marketproduct_logistic', 'marketproduct_comission', 'product', 'platform', 'account')
@@ -316,106 +316,8 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None, co
     comission_logistic_costs = {}
     for product in mp_products_list:
         try:
-            if product.platform.name == 'OZON':
-                account = product.account
-                price = ProductOzonPrice.objects.get(
-                    account=account, product=product.product).ozon_price
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost_fbs = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                logistic_cost_fbo = product.marketproduct_logistic.cost_logistic_fbo if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost_fbo,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost_fbs,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': 0,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': 0,
-                        'comission': comission_fbs_express
-                    }
-                }
-            elif product.platform.name == 'Wildberries':
-                price = ProductForMarketplacePrice.objects.get(
-                    product=product.product).wb_price
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs_express
-                    }
-                }
-            elif product.platform.name == 'Yandex Market':
-                price = ProductForMarketplacePrice.objects.get(
-                    product=product.product).yandex_price
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic if hasattr(
-                    product, 'marketproduct_logistic') else 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs_express
-                    }
-                }
+            price, overheads, comission_logistic_costs = profitability_part_template(product)
 
-            
-            else:
-                continue  # Пропускаем неизвестные платформы
             logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
             comission = comission_logistic_costs[order_delivery_type]['comission']
             cost_price = 0
@@ -434,11 +336,10 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None, co
                 try:
                     profitability_product = ProfitabilityMarketplaceProduct.objects.get(
                         **search_params)
-                    overheads = profitability_product.overheads
                 except ProfitabilityMarketplaceProduct.DoesNotExist:
-                    overheads = overheads
+                    pass
                 profit = round((price - float(cost_price) -
-                                logistic_cost - comission - (overheads * price)), 2)
+                                logistic_cost - (comission* price/100) - (overheads * price)), 2)
                 profitability = round(((profit / price) * 100), 2)
 
                 # Добавляем фильтрацию по группе рентабельности
@@ -504,7 +405,7 @@ def profitability_calculate(user_id, overheads=0.2, profitability_group=None, co
     return result
 
 
-# @sender_error_to_tg
+@sender_error_to_tg
 def save_overheds_for_mp_product(mp_product_dict: dict):
     """
     Сохраняет рентабельность для каждого продукта
@@ -522,7 +423,7 @@ def save_overheds_for_mp_product(mp_product_dict: dict):
         profitability_obj.save()
 
 
-# @sender_error_to_tg
+@sender_error_to_tg
 def calculate_mp_price_with_profitability(user_id):
     """Расчет цены товара на маркетплейсе на основе рентабельности"""
     user = User.objects.get(id=user_id)
@@ -530,11 +431,15 @@ def calculate_mp_price_with_profitability(user_id):
         'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
     products_to_update = []
     products_to_create = []
-    for prod in mp_products_list:
-        x = MarketplaceCommission.objects.filter(marketplace_product=prod)
-        if len(x) == 0:
-            print('нет комиссии', prod)
+
     for product in mp_products_list:
+        account_obj = product.account
+
+        overhead_data = StoreOverhead.objects.filter(account=account_obj).aggregate(
+            overhead_sum=Sum('overhead'))
+        overheads = overhead_data['overhead_sum']/100
+        if not overheads:
+            overheads = 0.2
         if MarketplaceCommission.objects.filter(marketplace_product=product).exists():
             if product.platform.name == 'OZON':
                 comission = product.marketproduct_comission.fbs_commission
@@ -543,7 +448,6 @@ def calculate_mp_price_with_profitability(user_id):
                 comission = product.marketproduct_comission.fbs_commission
                 logistic_cost = product.marketproduct_logistic.cost_logistic
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
-                overheads = product.mp_profitability.overheads
                 profitability = product.mp_profitability.profitability
                 common_product_cost_price = product.product.cost_price
                 if ProductCostPrice.objects.filter(
@@ -554,12 +458,10 @@ def calculate_mp_price_with_profitability(user_id):
                     profit_product_cost_price = 0
 
                 # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
-                common_price = round(((common_product_cost_price/100 + comission + logistic_cost +
-                                       common_product_cost_price/100) / (1 - profitability/100 - overheads)), 2)
+                common_price = round(((common_product_cost_price/100 + logistic_cost) / (1 - profitability/100 - comission/100 - overheads)), 2)
 
                 # Цена на основе себестоимости по оприходованию
-                enter_price = round(((profit_product_cost_price + comission + logistic_cost +
-                                      profit_product_cost_price) / (1 - profitability/100 - overheads)), 2)
+                enter_price = round(((profit_product_cost_price +  logistic_cost) / (1 - profitability/100 - comission/100 - overheads)), 2)
                 search_params = {'mp_product': product}
                 try:
                     mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
@@ -590,7 +492,7 @@ def calculate_mp_price_with_profitability(user_id):
             products_to_create)
 
 
-def calculate_mp_price_with_incoming_profitability(incoming_profitability: float, product_list: list, costprice_flag='table', order_delivery_type='fbs'):
+def calculate_mp_price_with_incoming_profitability(incoming_profitability: float, product_list: list, costprice_flag='table', order_delivery_type='fbo'):
     """
     Расчет цены товара на маркетплейсе на основе рентабельности.
     Если рентабельность товара в базе данных меньше, чем входящая рентабельность,
@@ -600,156 +502,95 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
         incoming_profitability - входящая рентабельность с которой сравниваем рентабельность из БД
         product_list - список товаров, которые находятся на странице
 
-    Возвращает: 
+    Возвращает:
         mp_products_list - список объектов модели MarketplaceProduct
 
     """
-    if order_delivery_type == None:
-        order_delivery_type = 'fbs'
+    if order_delivery_type is None:
+        order_delivery_type = 'fbo'
     incoming_profitability = incoming_profitability
     products_to_update = []
     products_to_create = []
     comission_logistic_costs = {}
     for mp_product in product_list:
         mp_products_list = MarketplaceProduct.objects.filter(id=mp_product.id).select_related(
-            'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
-
+            'marketproduct_logistic', 'marketproduct_comission', 'mp_profitability').prefetch_related(
+            'product', 'product__costprice_product', 'product__price_product', 'product__ozon_price_product')
         for product in mp_products_list:
-
-            if product.platform.name == 'OZON':
-                if MarketplaceCommission.objects.filter(marketplace_product=product).exists():
-                    comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                    comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                    comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                    comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                else:
-                    comission = 0
-                if MarketplaceLogistic.objects.filter(marketplace_product=product).exists():
-                    logistic_cost_fbs = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
-                        product, 'marketproduct_logistic') else 0
-                    logistic_cost_fbo = product.marketproduct_logistic.cost_logistic_fbo if hasattr(
-                        product, 'marketproduct_logistic') else 0
-                else:
-                    logistic_cost = 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost_fbo,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost_fbs,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': 0,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': 0,
-                        'comission': comission_fbs_express
-                    }
-                }
-            else:
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic
-            
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs_express
-                    }
-                }
-            
+            price = 0
+            common_price = 0
+            enter_price = 0
+            _, overheads, comission_logistic_costs = profitability_part_template(product)
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
+                if product.platform.name == 'Ozon':
+                    price = ProductOzonPrice.objects.get(product=product.product).ozon_price
+                    
+                else:
+                    marketplace_price = ProductForMarketplacePrice.objects.get(product=product.product)
+                    if product.platform.name == 'Wildberries':
+                        price = marketplace_price.wb_price
+                    elif product.platform.name == 'Yandex':
+                        price = marketplace_price.yandex_price
                 logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
                 comission = comission_logistic_costs[order_delivery_type]['comission']
-                overheads = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).overheads
                 profitability = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).profitability
                 common_product_cost_price = product.product.cost_price
-                
-                cost_price = product.product.cost_price
-                
                 if ProductCostPrice.objects.filter(
                         product=product.product).exists():
                     profit_product_cost_price = ProductCostPrice.objects.get(
                         product=product.product).cost_price
                 else:
                     profit_product_cost_price = 0
+                # print('profitability', profitability, price)
                 if not profitability:
-                    profitability=0
-                if incoming_profitability > profitability:
+                    profitability = 0
+
+                elif incoming_profitability > profitability:
                     profitability = incoming_profitability
-
-                    profit_obj = ProfitabilityMarketplaceProduct.objects.get(mp_product=product)
+                    
                     # Цена на основе обычной себестоимости
-                    common_price = round(((common_product_cost_price + comission + logistic_cost
-                                           ) / (1 - profitability/100 - overheads)), 2)
-
+                    common_price = round(((common_product_cost_price + logistic_cost
+                                           ) / (1 - profitability / 100 - comission / 100 - overheads)), 2)
                     # Цена на основе себестоимости по оприходованию
-                    enter_price = round(((profit_product_cost_price + comission + logistic_cost
-                                          ) / (1 - profitability/100 - overheads)), 2)
-                    if costprice_flag == 'table':
-                        profit = profitability * common_price / 100
-                    elif costprice_flag == 'enter':
-                        profit = profitability * enter_price / 100
-                    common_profit = profitability * common_price / 100
-                    profit_obj.profitability = profitability
-                    profit_obj.profit = profit
-                    profit_obj.save()
-                    search_params = {'mp_product': product}
-                    try:
-                        mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
-                            **search_params)
+                    enter_price = round(((profit_product_cost_price + logistic_cost
+                                          ) / (1 - profitability / 100 - comission / 100 - overheads)), 2)
+                elif incoming_profitability <= profitability:
+                    enter_price = price
+                    common_price = price
 
-                    except MarketplaceProductPriceWithProfitability.DoesNotExist:
-                        pass
-
-                    values_for_update = {
-                        "profit_price": enter_price,
-                        "usual_price": common_price
-                    }
-                    if 'mp_product_price' in locals():
-                        # Обновляем существующий объект
-                        mp_product_price.profit_price = enter_price
-                        mp_product_price.usual_price = common_price
-                        products_to_update.append(mp_product_price)
-                    else:
-                        # Создаем новый объект
-                        products_to_create.append(MarketplaceProductPriceWithProfitability(
-                            mp_product=product, **values_for_update))
+                profit_obj = ProfitabilityMarketplaceProduct.objects.get(mp_product=product)
+                profit = 0
+                if costprice_flag == 'table':
+                    profit = profitability * common_price / 100
+                elif costprice_flag == 'enter':
+                    profit = profitability * enter_price / 100
+                profit_obj.profitability = profitability
+                profit_obj.profit = profit
+                profit_obj.save()
+                # print('common_price', common_price, 'price', price, mp_product)
+                if MarketplaceProductPriceWithProfitability.objects.filter(
+                        mp_product=product).exists():
+                    mp_product_price = MarketplaceProductPriceWithProfitability.objects.get(
+                        mp_product=product)
+                    # Обновляем существующий объект
+                    mp_product_price.profit_price = enter_price
+                    mp_product_price.usual_price = common_price
+                    mp_product_price.save()
+                else:
+                    # Создаем новый объект
+                    MarketplaceProductPriceWithProfitability(
+                        mp_product=product,
+                        profit_price=enter_price,
+                        usual_price=common_price
+                    ).save()
     if products_to_update:
-        MarketplaceProductPriceWithProfitability.objects.bulk_update(
-            products_to_update, ['profit_price', 'usual_price'])
+        MarketplaceProductPriceWithProfitability.objects.bulk_update(products_to_update, ['profit_price', 'usual_price'])
     if products_to_create:
-        MarketplaceProductPriceWithProfitability.objects.bulk_create(
-            products_to_create)
+        MarketplaceProductPriceWithProfitability.objects.bulk_create(products_to_create)
     return product_list
 
 
-def calculate_mp_profitability_with_incoming_price(action_id, product_list: list, costprice_flag='table', order_delivery_type='fbs'):
+def calculate_mp_profitability_with_incoming_price(action_id, product_list: list, costprice_flag='table', order_delivery_type='fbo'):
     """
     Расчет рентабельности товара на маркетплейсе на основе входящей цены в акции.
     
@@ -760,83 +601,18 @@ def calculate_mp_profitability_with_incoming_price(action_id, product_list: list
 
     """
     if order_delivery_type == None:
-        order_delivery_type = 'fbs'
+        order_delivery_type = 'fbo'
     for mp_product in product_list:
         mp_products_list = MarketplaceProduct.objects.filter(id=mp_product.id).select_related(
             'marketproduct_logistic').select_related('marketproduct_comission').select_related('mp_profitability')
-        comission_logistic_costs = {}
+
         for product in mp_products_list:
 
-            if product.platform.name == 'OZON':
-                if MarketplaceCommission.objects.filter(marketplace_product=product).exists():
-                    comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                    comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                    comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                    comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                        product, 'marketproduct_comission') else 0
-                else:
-                    comission = 0
-                if MarketplaceLogistic.objects.filter(marketplace_product=product).exists():
-                    logistic_cost_fbs = product.marketproduct_logistic.cost_logistic_fbs if hasattr(
-                        product, 'marketproduct_logistic') else 0
-                    logistic_cost_fbo = product.marketproduct_logistic.cost_logistic_fbo if hasattr(
-                        product, 'marketproduct_logistic') else 0
-                else:
-                    logistic_cost = 0
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost_fbo,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost_fbs,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': 0,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': 0,
-                        'comission': comission_fbs_express
-                    }
-                }
-            else:
-                comission_fbs = product.marketproduct_comission.fbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbo = product.marketproduct_comission.fbo_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_dbs = product.marketproduct_comission.dbs_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                comission_fbs_express = product.marketproduct_comission.fbs_express_commission if hasattr(
-                    product, 'marketproduct_comission') else 0
-                logistic_cost = product.marketproduct_logistic.cost_logistic
-            
-                comission_logistic_costs = {
-                    'fbo': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbo
-                    },
-                    'fbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs
-                    },
-                    'dbs': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_dbs
-                    },
-                    'fbs_express': {
-                        'logistic_cost': logistic_cost,
-                        'comission': comission_fbs_express
-                    }
-                }
+            _, overheads, comission_logistic_costs = profitability_part_template(product)
+
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
                 logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
                 comission = comission_logistic_costs[order_delivery_type]['comission']
-                overheads = product.mp_profitability.overheads
                 profitability = product.mp_profitability.profitability
 
                 cost_price = 0
@@ -854,7 +630,7 @@ def calculate_mp_profitability_with_incoming_price(action_id, product_list: list
                 profit_obj = ProfitabilityMarketplaceProduct.objects.get(mp_product=product)
                 
                 profit = round((price - float(cost_price) -
-                                logistic_cost - comission - (overheads * price)), 2)
+                                logistic_cost - (comission * price / 100) - (overheads * price)), 2)
                 
                 profitability = round(((profit / price) * 100), 2)
 
@@ -865,73 +641,88 @@ def calculate_mp_profitability_with_incoming_price(action_id, product_list: list
         
     return product_list
 
+def changer_price_in_moy_sklad(user_id,
+                               product_obj, 
+                               mp_product_obj, 
+                               productprice_obj, 
+                               new_price):
+    """Вспомогательная функция для изменения цены на Моем Складе"""
+    product_type = mp_product_obj.product.product_type
+    platform_id = mp_product_obj.platform.id
+    account_obj = Account.objects.get(id=mp_product_obj.account.id)
+    moy_sklad_account = Account.objects.get(
+        user=User.objects.get(id=user_id),
+        platform=Platform.objects.get(
+            platform_type=MarketplaceChoices.MOY_SKLAD)
+    )
+    moy_sklad_token = moy_sklad_account.authorization_fields['token']
+    if platform_id == 1:
+        productprice_obj.wb_price = new_price
+        productprice_obj.save()
+    if platform_id == 2:
+        productprice_obj.yandex_price = new_price
+        productprice_obj.save()
+    if platform_id == 4:
+        ozonproductprice_obj = ProductOzonPrice.objects.get(
+            product=product_obj, account=account_obj)
+        ozonproductprice_obj.ozon_price = new_price
+        ozonproductprice_obj.save()
+    account_name = account_obj.name
+    if product_obj.moy_sklad_product_number:
+        new_price = new_price * 100
+        change_product_price(moy_sklad_token, platform_id, account_name,
+                             new_price, product_obj.moy_sklad_product_number, product_type)
+        mp_product_obj.change_price_flag = True
+        mp_product_obj.save()
+    else:
+        message = f"У продукта {product_obj.name} не могу обновить цену на {int(platform_id)} {account_name}. В БД не нашел его ID с Мой склад"
+        # for chat_id in ADMINS_CHATID_LIST:
+        #     bot.send_message(chat_id=chat_id, text=message[:4000])
 
 def update_price_info_from_user_request(data_dict: dict):
     """
     Обновляет цены на Мой склад и в БД, если пользователь отправил запрос
     {
-        'user_id': user_id.
+        'user_id': user_id,
+        'quarantine_percent': quarantine_percent,
+        'quarantine': true,
         'products_data': [
             {
                 'marketplaceproduct_id': marketplaceproduct_id,
-                'new_price': new_price,
-                'overhead': overhead
+                'new_price': new_price
             }
         ]
     }
     """
-
     user_id = data_dict.get('user_id', '')
     products_data = data_dict.get('products_data', '')
+    quarantine_percent = data_dict.get('quarantine_percent', 20)
+    quarantine = data_dict.get('quarantine', 'false')
 
     for data in products_data:
         marketplaceproduct_id = data.get('marketplaceproduct_id', '')
         new_price = data.get('new_price', '')
-        overhead = data.get('overhead', '')
-        mp_product_obj = MarketplaceProduct.objects.get(
-            id=marketplaceproduct_id)
-        platform_id = mp_product_obj.platform.id
-        product_obj = mp_product_obj.product
-        account_obj = Account.objects.get(id=mp_product_obj.account.id)
-        account_id = account_obj.id
-        moy_sklad_account = Account.objects.get(
-            user=User.objects.get(id=user_id),
-            platform=Platform.objects.get(
-                platform_type=MarketplaceChoices.MOY_SKLAD)
-        )
-        moy_sklad_token = moy_sklad_account.authorization_fields['token']
-        if overhead:
-            profitability_obj = ProfitabilityMarketplaceProduct.objects.get(
-                mp_product=mp_product_obj)
-            profitability_obj.overheads = overhead
-            profitability_obj.save()
-            changer_profitability_calculate(profitability_obj.mp_product)
         if new_price:
-            
+            mp_product_obj = MarketplaceProduct.objects.get(
+                id=marketplaceproduct_id)
+            product_obj = mp_product_obj.product
             productprice_obj = ProductForMarketplacePrice.objects.get(
                 product=product_obj)
-            if platform_id == 1:
-                productprice_obj.wb_price = new_price
-                productprice_obj.save()
-            if platform_id == 2:
-                productprice_obj.yandex_price = new_price
-                productprice_obj.save()
-            if platform_id == 4:
-                ozonproductprice_obj = ProductOzonPrice.objects.get(
-                    product=product_obj, account=account_obj)
-                ozonproductprice_obj.ozon_price = new_price
-                ozonproductprice_obj.save()
-            account_name = Account.objects.get(id=account_id).name
-            if product_obj.moy_sklad_product_number:
-                new_price = new_price * 100
-                change_product_price(moy_sklad_token, platform_id, account_name,
-                                     new_price, product_obj.moy_sklad_product_number)
-                mp_product_obj.change_price_flag = True
-                mp_product_obj.save()
+            rrc = productprice_obj.rrc
+            different_between_rrc = abs((new_price - rrc) / rrc * 100)
+            if quarantine != True:
+                if quarantine_percent >= different_between_rrc:
+                    changer_price_in_moy_sklad(user_id,
+                               product_obj, 
+                               mp_product_obj, 
+                               productprice_obj, 
+                               new_price)
             else:
-                message = f"У продукта {product_obj.name} не могу обновить цену на {int(platform_id)} {account_name}. В БД не нашел его ID с Мой склад"
-                # for chat_id in ADMINS_CHATID_LIST:
-                #     bot.send_message(chat_id=chat_id, text=message[:4000])
+                changer_price_in_moy_sklad(user_id,
+                               product_obj, 
+                               mp_product_obj, 
+                               productprice_obj, 
+                               new_price)
 
 
 def changer_profitability_calculate(product):
@@ -942,6 +733,13 @@ def changer_profitability_calculate(product):
     Входящие данные:
     product - объект модели MarketplaceProduct
     """
+    account_obj = product.account
+    overhead_data = StoreOverhead.objects.filter(account=account_obj).aggregate(
+                overhead_sum=Sum('overhead'))
+    try:
+        overheads = overhead_data['overhead_sum'] / 100
+    except:
+        overheads = 0.2
     price = 0
     if product.platform.name == 'OZON':
         account = product.account
@@ -965,11 +763,10 @@ def changer_profitability_calculate(product):
         try:
             profitability_product = ProfitabilityMarketplaceProduct.objects.get(
                 **search_params)
-            overheads = profitability_product.overheads
         except ProfitabilityMarketplaceProduct.DoesNotExist:
-            overheads = 0.2
+            pass
         profit = round((price - float(product_cost_price) -
-                        logistic_cost - comission - (overheads * price)), 2)
+                        logistic_cost - (comission * price / 100) - (overheads * price)), 2)
         profitability = round(((profit / price) * 100), 2)
         values_for_update = {
             "profit": profit,
@@ -987,6 +784,13 @@ def changer_price_with_profitability(product):
     Входящие данные:
     product - объект модели MarketplaceProduct
     """
+    account_obj = product.account
+    overhead_data = StoreOverhead.objects.filter(account=account_obj).aggregate(
+                overhead_sum=Sum('overhead'))
+    try:
+        overheads = overhead_data['overhead_sum'] / 100
+    except:
+        overheads = 0.2
     if product.platform.name == 'OZON':
         comission = product.marketproduct_comission.fbs_commission
         logistic_cost = product.marketproduct_logistic.cost_logistic_fbs
@@ -994,7 +798,6 @@ def changer_price_with_profitability(product):
         comission = product.marketproduct_comission.fbs_commission
         logistic_cost = product.marketproduct_logistic.cost_logistic
     if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
-        overheads = product.mp_profitability.overheads
         profitability = product.mp_profitability.profitability
         common_product_cost_price = product.product.cost_price/100
         if ProductCostPrice.objects.filter(
@@ -1004,11 +807,11 @@ def changer_price_with_profitability(product):
         else:
             profit_product_cost_price = 0
         # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
-        common_price = round(((common_product_cost_price/100 + comission + logistic_cost +
-                               common_product_cost_price/100) / (1 - profitability/100 - overheads)), 2)
+        common_price = round(((common_product_cost_price/100 +  logistic_cost
+                               ) / (1 - profitability/100 - comission/100 - overheads)), 2)
         # Цена на основе себестоимости по оприходованию
-        enter_price = round(((profit_product_cost_price + comission + logistic_cost +
-                              profit_product_cost_price) / (1 - profitability/100 - overheads)), 2)
+        enter_price = round(((profit_product_cost_price + logistic_cost
+                              ) / (1 - profitability/100 - comission/100 - overheads)), 2)
         search_params = {'mp_product': product}
 
         values_for_update = {
@@ -1017,3 +820,34 @@ def changer_price_with_profitability(product):
         }
         MarketplaceProductPriceWithProfitability.objects.update_or_create(
             defaults=values_for_update, **search_params)
+
+
+def calculate_quarantine_mp_products(quarantine_percent, queryset):
+    """
+    Фильтрует карантинные товары
+    """
+    percent = 20
+    if quarantine_percent:
+        percent = int(quarantine_percent)
+    percent = percent / 100
+    great = 1 + percent
+    less = 1 - percent
+    queryset = queryset.annotate(
+        wb_price=F('product__price_product__wb_price'),
+        yandex_price=F('product__price_product__yandex_price'),
+        rrc=F('product__price_product__rrc')
+    )
+    platform_id = queryset.first().platform.id
+    if platform_id == 1:
+        queryset = queryset.filter(
+            Q(wb_price__gt=F('rrc') * great) | Q( wb_price__lt=F('rrc') * less)
+        )
+    elif platform_id == 2:
+        queryset = queryset.filter(
+            Q(yandex_price__gt=F('rrc') * great) | Q(yandex_price__lt=F('rrc') * less)
+        )
+    elif platform_id == 4:
+        queryset = queryset.filter(
+            Q(product__price_product__rrc__gt=F('product__ozon_price_product__ozon_price') * great) | Q(product__price_product__rrc__lt=F('product__ozon_price_product__ozon_price')* less)
+        )
+    return queryset

@@ -120,7 +120,7 @@ def yandex_actions_list(ya_token, business_id):
 
 def yandex_actions_product_price_info(ya_token, business_id, action_id, limit=500):
     """
-    Получаем список всех артикулов OZON с информацией о комиссиях
+    Получаем список всех артикулов Yandex с информацией о комиссиях
 
     Входящие данные:
         ya_token - API токен пользователя

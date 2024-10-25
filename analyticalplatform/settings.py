@@ -26,7 +26,6 @@ BACK_ADMIN_CHAT_ID = os.getenv('BACK_ADMIN_CHAT_ID')
 API_ADMIN_CHAT_ID = os.getenv('API_ADMIN_CHAT_ID')
 ADMINS_CHATID_LIST = [BACK_ADMIN_CHAT_ID, API_ADMIN_CHAT_ID]
 
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -48,16 +47,17 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = "analyticalplatform.urls"
 
 TEMPLATES = [
@@ -91,12 +91,6 @@ DATABASES = {
     },
 }
 
-
-# Путь к файлу дампа
-
-
-# Подключаемся к базе данных
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -117,9 +111,9 @@ REST_FRAMEWORK = {
     "DATETIME_FORMAT": "iso-8601",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
     ),
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -161,7 +155,7 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv(
     "CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_TASK_TIME_LIMIT = 180 * 60
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TASK_SERIALIZER = "json"

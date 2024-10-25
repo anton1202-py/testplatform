@@ -127,7 +127,6 @@ def get_assortiment_info(TOKEN_MY_SKLAD, api_url):
         api_url - id ссылка для обращения
     """
     time.sleep(1)
-    print('api_url', api_url)
     api_url = f'{api_url}'
     headers = {
         'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
@@ -135,7 +134,11 @@ def get_assortiment_info(TOKEN_MY_SKLAD, api_url):
         'Content-Type': 'application/json'
     }
     try:
-        response = requests.get(api_url, headers=headers, timeout=20)
+        try:
+            response = requests.get(url=api_url, headers=headers, timeout=200)
+        except:
+            time.sleep(10)
+        response = requests.get(url=api_url, headers=headers, timeout=500)
         if response.status_code == 200:
             data = response.json()
             return data
@@ -161,7 +164,11 @@ def get_stock_info(TOKEN_MY_SKLAD):
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(api_url, headers=headers, timeout=20)
+    try:
+        response = requests.get(url=api_url, headers=headers, timeout=200)
+    except:
+        time.sleep(10)
+        response = requests.get(url=api_url, headers=headers, timeout=500)
     if response.status_code == 200:
         data = response.json()
         stocks = data.get('rows', [])
@@ -171,7 +178,7 @@ def get_stock_info(TOKEN_MY_SKLAD):
         print(message)
 
 
-def change_product_price(TOKEN_MY_SKLAD, platform_id, account_name, new_price, product_id):
+def change_product_price(TOKEN_MY_SKLAD, platform_id, account_name, new_price, product_id, product_type):
     """
     Изменение цены на продукт на Мой Склад
 
@@ -187,14 +194,15 @@ def change_product_price(TOKEN_MY_SKLAD, platform_id, account_name, new_price, p
                         2: 'Яндекс'
                         }
     api_url = f'https://api.moysklad.ru/api/remap/1.2/entity/product/{product_id}'
+    if product_type == 'bundle':
+        api_url = f'https://api.moysklad.ru/api/remap/1.2/entity/bundle/{product_id}'
     headers = {
         'Authorization': f'Bearer {TOKEN_MY_SKLAD}',
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(url=api_url, headers=headers, timeout=20)
+    response = requests.get(url=api_url, headers=headers, timeout=100)
     salePrices = response.json()['salePrices']
-
     for sp in salePrices:
         if platform_id != 4:
             if sp['priceType']['name'] == f"Цена {marketplace_dict[platform_id]} после скидки":
@@ -222,7 +230,11 @@ def picture_href_request(token_moy_sklad, api_url):
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(url=api_url, headers=headers, timeout=100)
+    try:
+        response = requests.get(url=api_url, headers=headers, timeout=200)
+    except:
+        time.sleep(10)
+        response = requests.get(url=api_url, headers=headers, timeout=500)
     link = ''
     if response.status_code == 200:
         data = response.json()
@@ -243,12 +255,17 @@ def get_picture_from_moy_sklad(token_moy_sklad, api_url):
         token_moy_sklad - токен учетной записи
         api_url - URL со ссылкой
     """
+    time.sleep(0.5)
     headers = {
         'Authorization': f'Bearer {token_moy_sklad}',
         'Accept-Encoding': 'gzip',
         'Content-Type': 'application/json'
     }
-    response = requests.get(url=api_url, headers=headers, timeout=20)
+    try:
+        response = requests.get(url=api_url, headers=headers, timeout=200)
+    except:
+        time.sleep(10)
+        response = requests.get(url=api_url, headers=headers, timeout=500)
 
     if response.status_code == 200:
         # Создаем объект модели
@@ -274,7 +291,11 @@ def moy_sklad_bundle_components(TOKEN_MY_SKLAD, bundle_id):
         'Content-Type': 'application/json'
     }
     components_data_list = []
-    response = requests.get(api_url, headers=headers)
+    try:
+        response = requests.get(url=api_url, headers=headers, timeout=200)
+    except:
+        time.sleep(10)
+        response = requests.get(url=api_url, headers=headers, timeout=500)
     if response.status_code == 200:
         data = response.json()
         products = data.get('rows', [])
