@@ -97,17 +97,17 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
         # ozon_products_data_to_db()
-        ozon_comission_logistic_add_data_to_db()
-
+        # ozon_comission_logistic_add_data_to_db()
+        
         # yandex_comission_logistic_add_data_to_db()
         # moy_sklad_stock_data()
         # profitability_calculate(user_id=user.id)
         # print('moy_sklad_costprice_add_to_db ')
         # moy_sklad_costprice_add_to_db()
         # print('Прошли moy_sklad_costprice_add_to_db ')
-        # action_article_price_to_db()
+        action_article_price_to_db()
         # profitability_calculate(user.id, overheads=0.2, profitability_group=None, costprice_flag='table')
-        # action_article_price_to_db()
+       
         updated_products = ProductPrice.objects.all()
         serializer = ProductPriceSerializer(updated_products, many=True)
         return Response(
@@ -875,7 +875,7 @@ class MarketplaceActionList(ListAPIView):
         if user_id:
             queryset = queryset.filter(account__user_id=user_id)
         if account_id:
-            queryset = queryset.filter(account_id=account_id)
+            queryset = queryset.filter(account__id=account_id)
         if platform_id:
             queryset = queryset.filter(platform__id=platform_id)
         return queryset
