@@ -837,17 +837,20 @@ def calculate_quarantine_mp_products(quarantine_percent, queryset):
         yandex_price=F('product__price_product__yandex_price'),
         rrc=F('product__price_product__rrc')
     )
-    platform_id = queryset.first().platform.id
-    if platform_id == 1:
-        queryset = queryset.filter(
-            Q(wb_price__gt=F('rrc') * great) | Q( wb_price__lt=F('rrc') * less)
-        )
-    elif platform_id == 2:
-        queryset = queryset.filter(
-            Q(yandex_price__gt=F('rrc') * great) | Q(yandex_price__lt=F('rrc') * less)
-        )
-    elif platform_id == 4:
-        queryset = queryset.filter(
-            Q(product__price_product__rrc__gt=F('product__ozon_price_product__ozon_price') * great) | Q(product__price_product__rrc__lt=F('product__ozon_price_product__ozon_price')* less)
-        )
-    return queryset
+    if queryset:
+        platform_id = queryset.first().platform.id
+        if platform_id == 1:
+            queryset = queryset.filter(
+                Q(wb_price__gt=F('rrc') * great) | Q( wb_price__lt=F('rrc') * less)
+            )
+        elif platform_id == 2:
+            queryset = queryset.filter(
+                Q(yandex_price__gt=F('rrc') * great) | Q(yandex_price__lt=F('rrc') * less)
+            )
+        elif platform_id == 4:
+            queryset = queryset.filter(
+                Q(product__price_product__rrc__gt=F('product__ozon_price_product__ozon_price') * great) | Q(product__price_product__rrc__lt=F('product__ozon_price_product__ozon_price')* less)
+            )
+        return queryset
+    else:
+        return []
