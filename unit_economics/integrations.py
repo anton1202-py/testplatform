@@ -546,7 +546,7 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                 if not profitability:
                     profitability = 0
 
-                elif incoming_profitability > profitability:
+                elif incoming_profitability >= profitability:
                     profitability = incoming_profitability
                     
                     # Цена на основе обычной себестоимости
