@@ -523,14 +523,14 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
             enter_price = 0
             _, overheads, comission_logistic_costs = profitability_part_template(product)
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
-                if product.platform.name == 'Ozon':
+                if product.platform.id == 4:
                     price = ProductOzonPrice.objects.get(product=product.product).ozon_price
                     
                 else:
                     marketplace_price = ProductForMarketplacePrice.objects.get(product=product.product)
-                    if product.platform.name == 'Wildberries':
+                    if product.platform.id == 1:
                         price = marketplace_price.wb_price
-                    elif product.platform.name == 'Yandex':
+                    elif product.platform.id == 2:
                         price = marketplace_price.yandex_price
                 logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
                 comission = comission_logistic_costs[order_delivery_type]['comission']
@@ -542,7 +542,8 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                         product=product.product).cost_price
                 else:
                     profit_product_cost_price = 0
-                # print('profitability', profitability, price)
+                print('profitability', profitability, price)
+
                 if not profitability:
                     profitability = 0
 
