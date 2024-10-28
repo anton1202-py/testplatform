@@ -524,7 +524,7 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
             _, overheads, comission_logistic_costs = profitability_part_template(product)
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
                 if product.platform.id == 4:
-                    price = ProductOzonPrice.objects.get(product=product.product).ozon_price
+                    price = ProductOzonPrice.objects.filter(product=product.product).first().ozon_price
                     
                 else:
                     marketplace_price = ProductForMarketplacePrice.objects.get(product=product.product)
