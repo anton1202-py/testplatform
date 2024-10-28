@@ -512,6 +512,7 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
     products_to_update = []
     products_to_create = []
     comission_logistic_costs = {}
+    print('costprice_flag', costprice_flag)
     for mp_product in product_list:
         mp_products_list = MarketplaceProduct.objects.filter(id=mp_product.id).select_related(
             'marketproduct_logistic', 'marketproduct_comission', 'mp_profitability').prefetch_related(
