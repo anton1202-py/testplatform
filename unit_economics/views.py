@@ -302,13 +302,16 @@ class MarketplaceProductViewSet(viewsets.GenericViewSet):
             'quarantine_percent')
         # Повторяющиеся фильтры в верху страницы и вверху таблицы.
         table_platform_id = self.request.query_params.get('table_platform_id')
+        table_brand = self.request.query_params.get('table_brand')
         
         filter_platform_id = ''
+        filter_brands = ''
         # В приоритете верхние фильтры
         if top_selection_platform_id:
             filter_platform_id = top_selection_platform_id
         elif table_platform_id:
             filter_platform_id = table_platform_id
+        
 
         if filter_platform_id:
             platforms_list = filter_platform_id.split(',')

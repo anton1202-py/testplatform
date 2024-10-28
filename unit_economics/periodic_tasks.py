@@ -82,6 +82,7 @@ def action_article_price_to_db():
             wb_action_data_to_db()
             actions_data = MarketplaceAction.objects.filter(
                 account=account, platform=platform)
+            print('Артикулы акции ВБ')
             wb_action_article_price_to_db(
                 account, actions_data, platform, wb_token)
         if platform.name == 'OZON':

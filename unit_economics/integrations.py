@@ -554,7 +554,7 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                     # Цена на основе себестоимости по оприходованию
                     enter_price = round(((profit_product_cost_price + logistic_cost
                                           ) / (1 - profitability / 100 - comission / 100 - overheads)), 2)
-                elif incoming_profitability <= profitability:
+                elif incoming_profitability < profitability:
                     enter_price = price
                     common_price = price
 
