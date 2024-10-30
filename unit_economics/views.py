@@ -92,12 +92,12 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # action_article_price_to_db()
        
         # yandex_comission_logistic_add_data_to_db()
-        moy_sklad_add_data_to_db()
-        wb_products_data_to_db()
+        # moy_sklad_add_data_to_db()
+        # wb_products_data_to_db()
         # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
-        ozon_products_data_to_db()
-        yandex_add_products_data_to_db()
+        # ozon_products_data_to_db()
+        # yandex_add_products_data_to_db()
         # ozon_comission_logistic_add_data_to_db()
         
         # yandex_comission_logistic_add_data_to_db()

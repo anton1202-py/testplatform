@@ -213,23 +213,24 @@ def wb_action_data_to_db():
     for account in accounts_wb:
         wb_token = account.authorization_fields['token']
         actions_data = wb_actions_list(wb_token)
-        for action in actions_data:
-            platform = account.platform
-            action_number = action['id']
-            action_name = action['name']
-            date_finish = datetime.strptime(
-                action['endDateTime'], "%Y-%m-%dT%H:%M:%SZ")
-            date_start = datetime.strptime(
-                action['startDateTime'], "%Y-%m-%dT%H:%M:%SZ")
-            search_params = {'platform': platform,
+        if actions_data:
+            for action in actions_data:
+                platform = account.platform
+                action_number = action['id']
+                action_name = action['name']
+                date_finish = datetime.strptime(
+                    action['endDateTime'], "%Y-%m-%dT%H:%M:%SZ")
+                date_start = datetime.strptime(
+                    action['startDateTime'], "%Y-%m-%dT%H:%M:%SZ")
+                search_params = {'platform': platform,
                              'account': account, 'action_number': action_number}
-            values_for_update = {
-                "action_name": action_name,
-                "date_start": date_start,
-                "date_finish": date_finish
-            }
-            MarketplaceAction.objects.update_or_create(
-                defaults=values_for_update, **search_params)
+                values_for_update = {
+                    "action_name": action_name,
+                    "date_start": date_start,
+                    "date_finish": date_finish
+                }
+                MarketplaceAction.objects.update_or_create(
+                    defaults=values_for_update, **search_params)
 
 
 @sender_error_to_tg
