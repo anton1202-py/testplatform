@@ -527,6 +527,8 @@ def calculate_mp_price_with_incoming_profitability(incoming_profitability: float
                         price = marketplace_price.yandex_price
                 logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
                 comission = comission_logistic_costs[order_delivery_type]['comission']
+                if not comission:
+                    comission = 0
                 profitability = ProfitabilityMarketplaceProduct.objects.get(mp_product=product).profitability
                 common_product_cost_price = product.product.cost_price
                 if ProductCostPrice.objects.filter(
