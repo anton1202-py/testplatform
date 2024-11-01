@@ -191,13 +191,13 @@ class MarketplaceCommission(models.Model):
     marketplace_product = models.OneToOneField(MarketplaceProduct, related_name='marketproduct_comission', on_delete=models.CASCADE,
                                                verbose_name='Продукт на маркетплейсе', null=True, blank=True)
     fbs_commission = models.FloatField(
-        verbose_name='Комиссия FBS', null=True, blank=True)
+        verbose_name='Комиссия FBS', default=0)
     fbo_commission = models.FloatField(
-        verbose_name='Комиссия FBO', null=True, blank=True)
+        verbose_name='Комиссия FBO', default=0)
     dbs_commission = models.FloatField(
-        verbose_name='Комиссия DBS', null=True, blank=True)
+        verbose_name='Комиссия DBS', default=0)
     fbs_express_commission = models.FloatField(
-        verbose_name='Комиссия FBS Express', null=True, blank=True)
+        verbose_name='Комиссия FBS Express', default=0)
 
     class Meta:
         verbose_name = "Комиссия на Маркетплейсе"
@@ -209,11 +209,11 @@ class MarketplaceLogistic(models.Model):
     marketplace_product = models.OneToOneField(MarketplaceProduct, related_name='marketproduct_logistic', on_delete=models.CASCADE,
                                                verbose_name='Продукт на маркетплейсе', null=True, blank=True)
     cost_logistic = models.FloatField(
-        verbose_name='Логистические затраты', null=True, blank=True)
+        verbose_name='Логистические затраты', default=0)
     cost_logistic_fbo = models.FloatField(
-        verbose_name='Логистические затраты FBO', null=True, blank=True)
+        verbose_name='Логистические затраты FBO', default=0)
     cost_logistic_fbs = models.FloatField(
-        verbose_name='Логистические затраты FBS', null=True, blank=True)
+        verbose_name='Логистические затраты FBS', default=0)
 
     class Meta:
         verbose_name = "Логистические затраты на Маркетплейсе"
