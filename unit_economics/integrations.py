@@ -98,13 +98,6 @@ def add_marketplace_comission_to_db(
     """
     Записывает комиссии маркетплейсов в базу данных
     """
-    if product_obj.id == 14410:
-        print('good_data.category.category_number', product_obj.category.category_number)
-        print('fbs_commission', fbs_commission)
-        print('fbo_commission', fbo_commission)
-        print('dbs_commission', dbs_commission)
-        x = MarketplaceCommission.objects.filter(marketplace_product=product_obj)
-        print(x)
     search_params = {'marketplace_product': product_obj}
     values_for_update = {
         "fbs_commission": fbs_commission,
@@ -273,11 +266,13 @@ def profitability_calculate_only(queryset, costprice_flag='table', order_deliver
                 else:
                     cost_price = 0
 
-            if price > 0:               
+            if price > 0:
+                if not comission:
+                    comission = 0            
                 profitability_product = ProfitabilityMarketplaceProduct.objects.filter(
                     mp_product=product)
                 profit = round((price - float(cost_price) -
-                                logistic_cost - (comission* price/100) - (overheads * price)), 2)
+                                logistic_cost - (comission * price/100) - (overheads * price)), 2)
                 profitability = round(((profit / price) * 100), 2)                
                 if profitability_product:
                     # Обновляем существующий объект

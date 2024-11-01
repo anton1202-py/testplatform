@@ -128,7 +128,6 @@ def wb_logistic(TOKEN_WB):
         TOKEN_WB - токен учетной записи ВБ
     """
     today_date = datetime.today().strftime('%Y-%m-%d')
-    print(today_date)
     api_url = f"https://common-api.wildberries.ru/api/v1/tariffs/box?date={today_date}"
     headers = {
         'Authorization': f'{TOKEN_WB}'
