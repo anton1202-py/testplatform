@@ -327,6 +327,8 @@ def profitability_calculate(user_id, profitability_group=None, costprice_flag='t
                     cost_price = 0
 
             if price > 0:
+                if not comission:
+                    comission = 0
                 search_params = {'mp_product': product}
                 try:
                     profitability_product = ProfitabilityMarketplaceProduct.objects.get(
@@ -442,6 +444,8 @@ def calculate_mp_price_with_profitability(user_id):
             else:
                 comission = product.marketproduct_comission.fbs_commission
                 logistic_cost = product.marketproduct_logistic.cost_logistic
+            if not comission:
+                comission = 0
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
                 profitability = product.mp_profitability.profitability
                 common_product_cost_price = product.product.cost_price
@@ -605,6 +609,8 @@ def calculate_mp_profitability_with_incoming_price(action_id, product_list: list
             if ProfitabilityMarketplaceProduct.objects.filter(mp_product=product).exists():
                 logistic_cost = comission_logistic_costs[order_delivery_type]['logistic_cost']
                 comission = comission_logistic_costs[order_delivery_type]['comission']
+                if not comission:
+                    comission = 0
                 profitability = product.mp_profitability.profitability
 
                 cost_price = 0
@@ -751,6 +757,8 @@ def changer_profitability_calculate(product):
         logistic_cost = product.marketproduct_logistic.cost_logistic
     product_cost_price = product.product.cost_price
     if price > 0:
+        if not comission:
+            comission = 0
         search_params = {'mp_product': product}
         try:
             profitability_product = ProfitabilityMarketplaceProduct.objects.get(
@@ -798,6 +806,8 @@ def changer_price_with_profitability(product):
                 product=product.product).cost_price
         else:
             profit_product_cost_price = 0
+        if not comission:
+            comission = 0
         # Цена на основе обычной себестоимости (на основе себестоимости комплектов)
         common_price = round(((common_product_cost_price/100 +  logistic_cost
                                ) / (1 - profitability/100 - comission/100 - overheads)), 2)
