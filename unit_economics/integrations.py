@@ -94,7 +94,7 @@ def add_marketplace_product_to_db(
 
 @sender_error_to_tg
 def add_marketplace_comission_to_db(
-        product_obj, fbs_commission=None, fbo_commission=None, dbs_commission=None, fbs_express_commission=None):
+        product_obj, fbs_commission=0, fbo_commission=0, dbs_commission=0, fbs_express_commission=0):
     """
     Записывает комиссии маркетплейсов в базу данных
     """
@@ -112,7 +112,7 @@ def add_marketplace_comission_to_db(
 
 @sender_error_to_tg
 def add_marketplace_logistic_to_db(
-        product_obj, cost_logistic=None, cost_logistic_fbo=None, cost_logistic_fbs=None):
+        product_obj, cost_logistic=0, cost_logistic_fbo=0, cost_logistic_fbs=0):
     """
     Записывает затраты на логистику маркетплейсов в базу данных
     """
