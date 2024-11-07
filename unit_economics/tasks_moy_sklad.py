@@ -188,6 +188,7 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
     wb_price = 0
     yandex_price = 0
     difficult_price_data = {}
+
     for data in price_info:
         if data['priceType']['name'] == 'Цена РРЦ МС':
             rrc = data['value'] / 100
@@ -195,6 +196,7 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
             wb_price = data['value'] / 100
         elif data['priceType']['name'] == 'Цена Яндекс После скидки':
             yandex_price = data['value'] / 100
+        
         else:
             price_description = data['priceType']['name']
             price_account = ' '.join(price_description.split()[1:])
@@ -202,6 +204,7 @@ def price_for_marketplace_from_moysklad(product_obj, price_info, accounts_names)
                 if OZON_ACCOUNT_NAME[price_account] in accounts_names:
                     difficult_price_data[OZON_ACCOUNT_NAME[price_account]
                                          ] = data['value']/100
+    print(product_obj, yandex_price)
     search_params = {'product': product_obj}
     values_for_update = {
         "wb_price": wb_price,

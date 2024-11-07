@@ -92,15 +92,15 @@ class ProductPriceMSViewSet(viewsets.ViewSet):
         # action_article_price_to_db()
        
         # yandex_comission_logistic_add_data_to_db()
-        # moy_sklad_add_data_to_db()
+        moy_sklad_add_data_to_db()
         # wb_products_data_to_db()
-        wb_logistic_add_to_db()
+        # wb_logistic_add_to_db()
         # wb_comission_add_to_db()
         # ozon_products_data_to_db()
         # yandex_add_products_data_to_db()
-        ozon_comission_logistic_add_data_to_db()
+        # ozon_comission_logistic_add_data_to_db()
         
-        yandex_comission_logistic_add_data_to_db()
+        # yandex_comission_logistic_add_data_to_db()
         # moy_sklad_stock_data()
         # profitability_calculate(user_id=user.id)
         # print('moy_sklad_costprice_add_to_db ')
@@ -353,7 +353,6 @@ class MarketplaceProductViewSet(viewsets.GenericViewSet):
                 queryset = queryset.filter(
                     Q(product__price_product__rrc__gt=F('product__ozon_price_product__ozon_price') * great) | Q(product__price_product__rrc__lt=F('product__ozon_price_product__ozon_price')* less)
                 )
-       
         # Добавляем prefetch_related для акции
         queryset = queryset.prefetch_related(
             Prefetch('product_in_action',
